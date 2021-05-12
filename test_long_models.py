@@ -98,7 +98,8 @@ def test(n_folds=5, verbose=0):
                 c['clr'], patient, i + 1, len(patients),
                 time_to_string(test_elapsed),
                 time_to_string(test_eta),
-            )
+            ),
+            end='\r'
         )
         patient_path = os.path.join(t_path, patient)
 
@@ -171,7 +172,7 @@ def test(n_folds=5, verbose=0):
             time.gmtime(time.time() - case_start)
         )
         print(
-            '{:}Patient {:} finished{:} (total time {:})\n'.format(
+            '{:}Patient {:} finished{:} (total time {:})'.format(
                 c['r'], patient, c['nc'], time_str
             )
         )
