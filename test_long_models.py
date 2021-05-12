@@ -74,8 +74,8 @@ def test(n_folds=5, verbose=0):
     print('Unet parameters {:d}'.format(n_params))
 
     brain_name = 'brain_mask.nii.gz'
-    bl_name = 'bl_flair.nii.gz'
-    fu_name = 'fu_flair.nii.gz'
+    bl_name = 'flair_time01_on_middle_space_n4.nii.gz'
+    fu_name = 'flair_time02_on_middle_space_n4.nii.gz'
     activity_name = 'positive_activity.nii.gz'
 
     patients = sorted(get_dirs(t_path))
