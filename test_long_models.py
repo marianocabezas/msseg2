@@ -5,13 +5,11 @@ from time import strftime
 import numpy as np
 import nibabel as nib
 from nibabel import load as load_nii
-from skimage.measure import label as bwlabeln
-from scipy.ndimage.morphology import binary_dilation
 from utils import color_codes
 from utils import get_mask, get_normalised_image
 from utils import time_to_string, find_file
 from models import NewLesionsUNet
-from utils import remove_small_regions
+from utils import remove_small_regions, get_dirs
 
 """
 > Arguments
@@ -77,153 +75,114 @@ def test(n_folds=5, verbose=0):
 
     brain_name = 'brain_mask.nii.gz'
     bl_name = 'bl_flair.nii.gz'
-    bl_lesion_name = 'bl_lesion.nii.gz'
     fu_name = 'fu_flair.nii.gz'
-    fu_lesion_name = 'fu_lesion.nii.gz'
     activity_name = 'positive_activity.nii.gz'
-    enlarging_name = 'enlarging_activity.nii.gz'
-    new_name = 'new_activity.nii.gz'
 
-    case_start = time.time()
+    patients = sorted(get_dirs(t_path))
 
-    pbrain_name = find_file(brain_name, t_path)
-    brain = get_mask(pbrain_name)
-    pbl_name = find_file(bl_name, t_path)
-    pfu_name = find_file(fu_name, t_path)
-    bl = np.expand_dims(
-        get_normalised_image(pbl_name, brain, dtype=np.float16), axis=0
-    )
-    fu = np.expand_dims(
-        get_normalised_image(pfu_name, brain, dtype=np.float16), axis=0
+    # Preprocessing
+    time_str = time.strftime("%H:%M:%S")
+    print(
+        '{:}[{:}]{:} Preprocessing the dataset - (path: {:}){:}'.format(
+            c['c'], time_str, c['g'], t_path, c['nc'])
     )
 
-    ref_nii = load_nii(pbrain_name)
-    segmentation = np.zeros_like(ref_nii.get_fdata())
-
-    for fi in range(n_folds):
-        net_name = 'positive-unet_n{:d}.pt'.format(fi)
-        net.load_model(os.path.join(model_path, net_name))
-        if verbose > 1:
-            print(
-                '{:}Runing activity pipeline {:}(fold: {:})'.format(
-                    c['clr'] + c['c'], c['nc'],
-                    c['c'] + str(fi) + c['nc']
-                ), end='\r'
-            )
-
-        batch_size = options['batch_size']
-        patch_size = options['patch_size']
-        brain_bin = brain.astype(np.bool)
-        idx = np.where(brain_bin)
-        bb = tuple(
-            slice(min_i, max_i)
-            for min_i, max_i in zip(
-                np.min(idx, axis=-1), np.max(idx, axis=-1)
-            )
-        )
-        seg = np.zeros(brain.shape)
-        t_source = bl[(slice(None),) + bb]
-        t_target = fu[(slice(None),) + bb]
-        seg_bb = net.new_lesions_patch(
-            t_source, t_target, patch_size, batch_size
-        )
-        seg[bb] = seg_bb
-
-        seg_temp = np.zeros_like(ref_nii.get_fdata())
-        seg_temp[bb] = seg_bb
-        seg_temp[np.logical_not(brain_bin)] = 0
-
-        segmentation += (seg_temp / n_folds)
-
-    pactivity_name = os.path.join(t_path, activity_name)
-    penlarging_name = os.path.join(t_path, enlarging_name)
-    pnew_name = os.path.join(t_path, new_name)
-    # Thresholding + brain mask filtering
-    segmentation_bin = remove_small_regions(
-        np.logical_and(segmentation > 0.5, brain.astype(np.bool)),
-        min_size=2
-    )
-
-    segmentation_lab = bwlabeln(segmentation_bin)
-
-    # Baseline filtering
-    pbl_lesion_name = os.path.join(t_path, bl_lesion_name)
-    bl_lesion = get_mask(pbl_lesion_name, dtype=np.bool)
-
-    lesions = [
-        (lab, segmentation_lab == lab)
-        for lab in np.unique(segmentation_lab)
-    ]
-    bl_overlap = [
-        (lab, np.sum(np.logical_and(lesion, bl_lesion)) / np.sum(lesion))
-        for lab, lesion in lesions
-    ]
-    bl_valid = [
-        lab
-        for lab, overlap in bl_overlap
-        if lab > 0 and overlap < 0.5
-    ]
-
-    segmentation_bl = np.isin(segmentation_lab, bl_valid)
-
-    # Follow-up filtering
-    pfu_lesion_name = os.path.join(t_path, fu_lesion_name)
-    fu_lesion = get_mask(pfu_lesion_name, dtype=np.bool)
-    fu_valid = segmentation_lab[fu_lesion]
-    segmentation_fu = np.isin(segmentation_lab, fu_valid[fu_valid > 0])
-
-    # Final mask
-    final_activity = np.logical_and(segmentation_fu, segmentation_bl)
-    segmentation_nii = nib.Nifti1Image(
-        final_activity, ref_nii.get_qform(), ref_nii.header
-    )
-    segmentation_nii.to_filename(pactivity_name)
-    
-    # New / Enlarging split
-    dilated_bl_mask = binary_dilation(
-        bl_lesion, iterations=options['base_dilation']
-    )
-    activity_label, n_activity = bwlabeln(
-        final_activity, return_num=True
-    )
-    all_labels = np.unique(activity_label)
-    all_labels = all_labels[all_labels > 0]
-    enlarging_labels = np.unique(activity_label[dilated_bl_mask])
-    enlarging_labels = enlarging_labels[enlarging_labels > 0]
-    new_labels = [
-        label for label in all_labels if label not in enlarging_labels
-    ]
-    n_enlarging = len(enlarging_labels)
-    n_new = n_activity - n_enlarging
-    # Enlarging
-    enlarging_activity = np.isin(activity_label, enlarging_labels)
-    segmentation_nii = nib.Nifti1Image(
-        enlarging_activity, ref_nii.get_qform(), ref_nii.header
-    )
-    segmentation_nii.to_filename(penlarging_name)
-    # New
-    new_activity = np.isin(activity_label, new_labels)
-    segmentation_nii = nib.Nifti1Image(
-        new_activity, ref_nii.get_qform(), ref_nii.header
-    )
-    segmentation_nii.to_filename(pnew_name)
-
-    with open(os.path.join(t_path, 'activity_number.txt'), 'w') as f:
-        f.write(
-            'new,{:d},{:d}\nenlarging,{:d},{:d}'.format(
-                n_new, np.sum(new_activity),
-                n_enlarging, np.sum(enlarging_activity)
-            )
-        )
-
-    if verbose > 1:
-        time_elapsed = time.time() - case_start
+    global_start = time.time()
+    # Main loop
+    for i, patient in enumerate(patients):
+        test_elapsed = time.time() - global_start
+        test_eta = len(patients) * test_elapsed / (i + 1)
         print(
-            '{:}Finished activity pipeline {:}'.format(
-                c['clr'] + c['c'],
-                c['nc'] + time_to_string(time_elapsed)
+            '{:}Testing patient {:} ({:d}/{:d}) '
+            '{:} ETA {:}'.format(
+                c['clr'], patient, i + 1, len(patients),
+                time_to_string(test_elapsed),
+                time_to_string(test_eta),
             )
         )
+        patient_path = os.path.join(t_path, patient)
+
+        case_start = time.time()
+
+        pbrain_name = find_file(brain_name, patient_path)
+        brain = get_mask(pbrain_name)
+        pbl_name = find_file(bl_name, patient_path)
+        pfu_name = find_file(fu_name, patient_path)
+        bl = np.expand_dims(
+            get_normalised_image(pbl_name, brain, dtype=np.float16), axis=0
+        )
+        fu = np.expand_dims(
+            get_normalised_image(pfu_name, brain, dtype=np.float16), axis=0
+        )
+
+        ref_nii = load_nii(pbrain_name)
+        segmentation = np.zeros_like(ref_nii.get_fdata())
+
+        for fi in range(n_folds):
+            net_name = 'positive-unet_n{:d}.pt'.format(fi)
+            net.load_model(os.path.join(model_path, net_name))
+            if verbose > 1:
+                print(
+                    '{:}Runing activity pipeline {:}(fold: {:})'.format(
+                        c['clr'] + c['c'], c['nc'],
+                        c['c'] + str(fi) + c['nc']
+                    ), end='\r'
+                )
+
+            batch_size = options['batch_size']
+            patch_size = options['patch_size']
+            brain_bin = brain.astype(np.bool)
+            idx = np.where(brain_bin)
+            bb = tuple(
+                slice(min_i, max_i)
+                for min_i, max_i in zip(
+                    np.min(idx, axis=-1), np.max(idx, axis=-1)
+                )
+            )
+            seg = np.zeros(brain.shape)
+            t_source = bl[(slice(None),) + bb]
+            t_target = fu[(slice(None),) + bb]
+            seg_bb = net.new_lesions_patch(
+                t_source, t_target, patch_size, batch_size
+            )
+            seg[bb] = seg_bb
+
+            seg_temp = np.zeros_like(ref_nii.get_fdata())
+            seg_temp[bb] = seg_bb
+            seg_temp[np.logical_not(brain_bin)] = 0
+
+            segmentation += (seg_temp / n_folds)
+
+        pactivity_name = os.path.join(patient_path, activity_name)
+        # Thresholding + brain mask filtering
+        final_activity = remove_small_regions(
+            np.logical_and(segmentation > 0.5, brain.astype(np.bool)),
+            min_size=2
+        )
+
+        # Final mask
+        segmentation_nii = nib.Nifti1Image(
+            final_activity, ref_nii.get_qform(), ref_nii.header
+        )
+        segmentation_nii.to_filename(pactivity_name)
+
+        time_str = time.strftime(
+            '%H hours %M minutes %S seconds',
+            time.gmtime(time.time() - case_start)
+        )
+        print(
+            '{:}Patient {:} finished{:} (total time {:})\n'.format(
+                c['r'], patient, c['nc'], time_str
+            )
+        )
+
+    time_str = time.strftime(
+        '%H hours %M minutes %S seconds',
+        time.gmtime(time.time() - global_start)
+    )
+    print(
+        '{:}All patients finished {:}'.format(c['r'], time_str + c['nc'])
+    )
 
 
 """

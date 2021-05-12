@@ -1,7 +1,6 @@
 import argparse
 import os
 import time
-from shutil import rmtree
 from functools import reduce
 import numpy as np
 import SimpleITK as itk
@@ -16,7 +15,6 @@ from scipy.ndimage.morphology import binary_dilation as imdilate
 from scipy.ndimage.morphology import binary_fill_holes
 from utils import find_file, get_dirs, time_f
 from utils import color_codes, print_message
-from sitk import itkn4
 
 
 def parse_args():
@@ -40,6 +38,57 @@ def parse_args():
 """
 > Main functions (preprocessing)
 """
+
+
+def itkn4(
+        image,
+        path=None,
+        name=None,
+        mask=None,
+        max_iters=400,
+        levels=3,
+        cast=itk.sitkFloat32,
+        verbose=1
+):
+    """
+
+    :param image:
+    :param path:
+    :param name:
+    :param mask:
+    :param max_iters:
+    :param levels:
+    :param cast:
+    :param verbose:
+    :return:
+    """
+
+    # Init
+    if isinstance(image, str):
+        image = itk.ReadImage(image)
+    elif isinstance(image, np.ndarray):
+        image = itk.GetImageFromArray(image)
+
+    if verbose > 1:
+        print('-> Image: ' + os.path.join(path, name + '_corrected.nii.gz'))
+    found = find_file(name + '_corrected.nii.gz', path)
+    if path is None or name is None or found is None:
+        if mask is not None:
+            if isinstance(mask, str):
+                mask = itk.ReadImage(mask)
+            elif isinstance(mask, np.ndarray):
+                mask = itk.GetImageFromArray(mask)
+        else:
+            mask = itk.OtsuThreshold(image, 0, 1, 200)
+        image = itk.Cast(image, cast)
+        corrector = itk.N4BiasFieldCorrectionImageFilter()
+        corrector.SetMaximumNumberOfIterations([max_iters] * levels)
+        output = corrector.Execute(image, mask)
+        if name is not None and path is not None:
+            itk.WriteImage(
+                output, os.path.join(path, name + '_corrected.nii.gz')
+            )
+        return itk.GetArrayFromImage(output)
 
 
 def wm_segmentation(
