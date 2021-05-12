@@ -124,8 +124,9 @@ def test(n_folds=5, verbose=0):
             net.load_model(os.path.join(model_path, net_name))
             if verbose > 1:
                 print(
-                    '{:}Runing activity pipeline {:}(fold: {:})'.format(
+                    '{:}Running activity pipeline {:}({:} - fold: {:})'.format(
                         c['clr'] + c['c'], c['nc'],
+                        c['g'] + patient + c['nc'],
                         c['c'] + str(fi) + c['nc']
                     ), end='\r'
                 )
