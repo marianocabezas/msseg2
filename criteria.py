@@ -31,7 +31,7 @@ def dsc_loss(pred, target, eps=1e-4):
 
     # We'll do the sums / means across the 3D axes to have a value per patch.
     # There is only a class here.
-    # DSC = 2 * | pred *union* target | / (| pred | + | target |)
+    # DSC = 2 * | pred *intersection* target | / (| pred | + | target |)
     reduce_dims = tuple(range(1, len(dims)))
     num = (2 * torch.sum(pred * target, dim=reduce_dims))
     den = torch.sum(pred + target, dim=reduce_dims).clamp(min=eps)
