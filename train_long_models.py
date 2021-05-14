@@ -293,7 +293,8 @@ def test_net(
             except RuntimeError:
                 seg = np.zeros(brain_bin.shape)
                 seg_bb = net.new_lesions_patch(
-                    bl[(slice(None),) + bb], fu[(slice(None),) + bb],
+                    np.expand_dims(bl[bb], axis=0),
+                    np.expand_dims(fu[bb], axis=0),
                     32, 16
                 )
                 seg[bb] = seg_bb

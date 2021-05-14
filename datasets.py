@@ -143,6 +143,7 @@ class LongitudinalCroppingDataset(Dataset):
                 index -= len(self.patch_slices)
             slice_i, case_idx = self.patch_slices[index]
         else:
+            flip = np.random.random() > 0.5
             index = np.random.randint(len(self.current_bck))
             slice_i, case_idx = self.current_bck.pop(index)
             if len(self.current_bck) == 0:
