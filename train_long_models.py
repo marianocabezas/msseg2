@@ -156,6 +156,8 @@ def train_net(
         net.load_model(initial_weights)
 
     model_path = parse_args()['model_dir']
+    if not os.path.exists(model_path):
+        os.mkdir(model_path)
     try:
         net.load_model(os.path.join(model_path, model_name))
         print(
