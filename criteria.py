@@ -6,7 +6,7 @@ DSC based losses
 """
 
 
-def dsc_loss(pred, target, eps=1e-5):
+def dsc_loss(pred, target, eps=1e-4):
     """
     Loss function based on a single class DSC metric.
     :param pred: Predicted values. This tensor should have the shape:
