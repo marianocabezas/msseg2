@@ -29,6 +29,16 @@ def parse_args():
              'the patients are stored.'
     )
     parser.add_argument(
+        '-m', '--model-directory',
+        dest='model_dir', default='./ModelWeightsFinal',
+        help='Path to the final model weights.'
+    )
+    parser.add_argument(
+        '-M', '--initial-model-directory',
+        dest='init_model_dir', default=None,
+        help='Path to the initial model weights (fine-tuning).'
+    )
+    parser.add_argument(
         '-e', '--epochs',
         dest='epochs',
         type=int, default=10,
@@ -67,20 +77,16 @@ def parse_args():
 
 
 def get_data(
-        patients,
-        d_path=None,
-        images=None,
-        brain_name='brain_mask.nii.gz',
-        positive_name='positive_activity.nii.gz',
+    patients,
+    d_path=None,
+    brain_name='brain_mask.nii.gz',
+    bl_name='flair_time01_on_middle_space_n4.nii.gz',
+    fu_name='flair_time02_on_middle_space_n4.nii.gz',
+    positive_name='positive_activity.nii.gz',
 ):
     if d_path is None:
         d_path = parse_args()['dataset_path']
-    if images is None:
-        images = ['pd', 't1', 't2', 'flair']
-    patient_paths = [
-        os.path.join(d_path, centre, patient, 'preprocessed')
-        for centre, patient in patients
-    ]
+    patient_paths = [os.path.join(d_path, patient) for patient in patients]
     brain_names = [
         os.path.join(p_path, brain_name) for p_path in patient_paths
     ]
@@ -91,77 +97,19 @@ def get_data(
     ]
     positive = list(map(get_mask, positive_names))
 
-    norm_source = [
-        np.stack(
-            [
-                get_normalised_image(
-                    os.path.join(
-                        p, 'bl_{:}_final.nii.gz'.format(im)
-                    ),
-                    mask_i
-                ) for im in images
-            ],
-            axis=0
+    norm_bl = [
+        np.expand_dims(
+            get_normalised_image(os.path.join(p, bl_name), mask_i), axis=0
         ) for p, mask_i in zip(patient_paths, brains)
     ]
 
-    norm_target = [
-        np.stack(
-            [
-                get_normalised_image(
-                    os.path.join(
-                        p, 'fu_{:}_final.nii.gz'.format(im)
-                    ),
-                    mask_i
-                ) for im in images
-            ],
-            axis=0
+    norm_fu = [
+        np.expand_dims(
+            get_normalised_image(os.path.join(p, fu_name), mask_i), axis=0
         ) for p, mask_i in zip(patient_paths, brains)
     ]
 
-    return norm_source, norm_target, positive, brains
-
-
-def get_patient(
-        patient,
-        centre,
-        d_path=None,
-        images=None,
-        brain_name='brain_mask.nii.gz',
-):
-    if d_path is None:
-        d_path = parse_args()['dataset_path']
-    if images is None:
-        images = ['pd', 't1', 't2', 'flair']
-    patient_path = os.path.join(d_path, centre, patient, 'preprocessed')
-    brain_name = os.path.join(patient_path, brain_name)
-    brain = get_mask(brain_name)
-
-    norm_source = np.stack(
-        [
-            get_normalised_image(
-                os.path.join(
-                    patient_path, 'bl_{:}_final.nii.gz'.format(im)
-                ),
-                brain
-            ) for im in images
-        ],
-        axis=0
-    )
-
-    norm_target = np.stack(
-        [
-            get_normalised_image(
-                os.path.join(
-                    patient_path, 'fu_{:}_final.nii.gz'.format(im)
-                ),
-                brain
-            ) for im in images
-        ],
-        axis=0
-    )
-
-    return norm_source, norm_target, brain
+    return norm_bl, norm_fu, positive, brains
 
 
 """
@@ -202,8 +150,14 @@ def train_net(
         p.numel() for p in net.parameters() if p.requires_grad
     )
 
+    initial_model = parse_args()['init_model_dir']
+    if initial_model is not None:
+        initial_weights = os.path.join(initial_model, model_name)
+        net.load_model(initial_weights)
+
+    model_path = parse_args()['model_dir']
     try:
-        net.load_model(os.path.join(d_path, model_name))
+        net.load_model(os.path.join(model_path, model_name))
         print(
             '{:}Network loaded{:} ({:d} parameters)'.format(
                 c['c'], c['nc'], n_params
@@ -227,11 +181,11 @@ def train_net(
 
         print('Loading the {:}training{:} data'.format(c['b'], c['nc']))
         train_source, train_target, train_masks, train_brains = get_data(
-            train_patients, d_path, images=images
+            train_patients, d_path
         )
         print('Loading the {:}validation{:} data'.format(c['b'], c['nc']))
         val_source, val_target, val_masks, val_brains = get_data(
-            val_patients, d_path, images=images
+            val_patients, d_path
         )
 
         if verbose > 1:
@@ -277,7 +231,14 @@ def train_net(
     net.save_model(os.path.join(d_path, model_name))
 
 
-def test_net(net, patients, images, filename, gt_name, verbose=1):
+def test_net(
+    net, patients,
+    filename='positive_activity.nii.gz',
+    brain_name='brain_mask.nii.gz',
+    bl_name='flair_time01_on_middle_space_n4.nii.gz',
+    fu_name='flair_time02_on_middle_space_n4.nii.gz',
+    verbose=1
+):
     # Init
     c = color_codes()
     d_path = parse_args()['d_path']
@@ -285,7 +246,7 @@ def test_net(net, patients, images, filename, gt_name, verbose=1):
 
     test_start = time.time()
     tests = len(patients)
-    for i, (c_i, p) in enumerate(patients):
+    for i, p in enumerate(patients):
         test_elapsed = time.time() - test_start
         test_eta = tests * test_elapsed / (i + 1)
         print(
@@ -296,13 +257,18 @@ def test_net(net, patients, images, filename, gt_name, verbose=1):
                 time_to_string(test_eta),
             )
         )
-        path = os.path.join(d_path, c_i, p, 'preprocessed')
+        patient_path = os.path.join(d_path, p)
 
-        if find_file(filename, path) is None:
-            seg_name = os.path.join(path, filename)
-            nii = load_nii(os.path.join(path, gt_name))
-            source, target, brain = get_patient(p, c_i, d_path, images)
-            brain_bin = brain.astype(np.bool)
+        if find_file(filename, patient_path) is None:
+            seg_name = os.path.join(patient_path, filename)
+            pbrain_name = find_file(brain_name, patient_path)
+            nii = load_nii(pbrain_name)
+            brain_bin = nii.get_fdata().astype(bool)
+            pbl_name = find_file(bl_name, patient_path)
+            pfu_name = find_file(fu_name, patient_path)
+            bl = get_normalised_image(pbl_name, brain_bin)
+            fu = get_normalised_image(pfu_name, brain_bin)
+
             # Brain mask
             idx = np.where(brain_bin)
             bb = tuple(
@@ -313,11 +279,13 @@ def test_net(net, patients, images, filename, gt_name, verbose=1):
             )
 
             try:
-                seg = net.new_lesions(source, target)
+                seg = net.new_lesions(
+                    np.expand_dims(bl, axis=0), np.expand_dims(fu, axis=0)
+                )
             except RuntimeError:
-                seg = np.zeros(brain.shape)
+                seg = np.zeros(brain_bin.shape)
                 seg_bb = net.new_lesions_patch(
-                    source[(slice(None),) + bb], target[(slice(None),) + bb],
+                    bl[(slice(None),) + bb], fu[(slice(None),) + bb],
                     32, 16
                 )
                 seg[bb] = seg_bb
@@ -327,10 +295,10 @@ def test_net(net, patients, images, filename, gt_name, verbose=1):
                 seg, nii.get_qform(), nii.header
             )
             seg_nii.to_filename(
-                os.path.join(path, 'pr_{:}'.format(filename))
+                os.path.join(patient_path, 'pr_{:}'.format(filename))
             )
 
-            segmentation = remove_small_regions(seg > 0.5, min_size=5)
+            segmentation = remove_small_regions(seg > 0.5, min_size=3)
             seg_nii = nib.Nifti1Image(
                 segmentation, nii.get_qform(), nii.header
             )
@@ -361,10 +329,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
     # Init
     c = color_codes()
     d_path = parse_args()['d_path']
-    patients = [
-        (c_i, [p for p in get_dirs(os.path.join(d_path, c_i))])
-        for c_i in ['GE_3', 'Philips_1.5', 'Philips_3', 'SIEMENS_3']
-    ]
+    patients = sorted(get_dirs(d_path))
 
     patience = parse_args()['patience']
     epochs = parse_args()['epochs']
@@ -381,28 +346,13 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                 )
             )
         # Training
-        ini_test = [len(p_list) * i // n_folds for c, p_list in patients]
-        end_test = [len(p_list) * (i + 1) // n_folds for c, p_list in patients]
-        training_set = [
-            [(c, p) for p in p_list[end_c:] + p_list[:ini_c]]
-            for (c, p_list), ini_c, end_c in zip(patients, ini_test, end_test)
-        ]
-        val_idx = [
-            max(1, int(val_split * len(p_list))) for p_list in training_set
-        ]
-        val_patients = [
-            (c, p) for p_list, idx in zip(training_set, val_idx)
-            for (c, p) in p_list[:idx]
-        ]
-        train_patients = [
-            (c, p) for p_list, idx in zip(training_set, val_idx)
-            for (c, p) in p_list[idx:]
-        ]
-        test_patients = [
-            (c, p)
-            for (c, p_list), ini_c, end_c in zip(patients, ini_test, end_test)
-            for p in p_list[ini_c:end_c]
-        ]
+        ini_test = len(patients) * i // n_folds
+        end_test = len(patients) * (i + 1) // n_folds
+        training_set = patients[end_test:] + patients[:ini_test]
+        val_idx = max(1, int(val_split * len(training_set)))
+        val_patients = training_set[:val_idx]
+        train_patients = training_set[val_idx:]
+        test_patients = patients[ini_test:end_test]
 
         print(
             '{:}[{:}]{:} Positive activity {:}Unet{:}'.format(
@@ -425,11 +375,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                 c['nc']
             )
         )
-        test_net(
-            seg_unet, test_patients, images,
-            'positive.xval.unet.nii.gz', 'positive_activity.nii.gz',
-            verbose=verbose
-        )
+        test_net(seg_unet, test_patients, images, verbose=verbose)
 
 
 def main():
