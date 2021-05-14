@@ -53,6 +53,10 @@ def dsc_binary_loss(pred, target):
 
     dsc_k = intersection / (sum_pred + sum_target)
     dsc_k = dsc_k[torch.logical_not(torch.isnan(dsc_k))]
-    dsc = 1 - torch.mean(dsc_k)
+    print(dsc_k)
+    if len(dsc_k) > 0:
+        dsc = 1 - torch.mean(dsc_k)
+    else:
+        dsc = 0
 
     return torch.clamp(dsc, 0., 1.)
