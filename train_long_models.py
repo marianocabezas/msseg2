@@ -236,7 +236,7 @@ def train_net(
                 )
             )
 
-    net.save_model(os.path.join(d_path, model_name))
+    net.save_model(os.path.join(model_path, model_name))
 
 
 def test_net(
