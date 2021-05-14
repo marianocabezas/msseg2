@@ -263,7 +263,8 @@ def test_net(
                 c['clr'], p, i + 1, len(patients),
                 time_to_string(test_elapsed),
                 time_to_string(test_eta),
-            )
+            ),
+            end='\r'
         )
         patient_path = os.path.join(d_path, p)
 
