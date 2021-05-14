@@ -1,6 +1,5 @@
 import time
 import itertools
-from functools import partial
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -8,7 +7,7 @@ import numpy as np
 from base import BaseModel, ResConv3dBlock
 from base import Autoencoder
 from utils import time_to_string, to_torch_var
-from criteria import dsc_loss
+from criteria import dsc_loss, dsc_binary_loss
 
 
 def norm_f(n_f):
@@ -94,7 +93,7 @@ class NewLesionsUNet(BaseModel):
             {
                 'name': 'dsc',
                 'weight': 1,
-                'f': lambda p, t: dsc_loss(p > 0.5, t)
+                'f': lambda p, t: dsc_binary_loss(p, t)
             },
         ]
 
