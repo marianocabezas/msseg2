@@ -68,6 +68,11 @@ def parse_args():
         type=int, default=32,
         help='Patch size'
     )
+    parser.add_argument(
+        '-f', '--freeze-ae',
+        dest='freeze_ae', default=False, action='store_true',
+        help='Option to freeze the autoencoder.'
+    )
     return vars(parser.parse_args())
 
 
@@ -153,6 +158,8 @@ def train_net(
     if initial_model is not None:
         initial_weights = os.path.join(initial_model, model_name)
         net.load_model(initial_weights)
+        if parse_args()['freeze_ae']:
+            net.segmenter[0].freeze()
 
     model_path = parse_args()['model_dir']
     if not os.path.exists(model_path):

@@ -74,13 +74,13 @@ class NewLesionsUNet(BaseModel):
             {
                 'name': 'dsc',
                 'weight': 1,
-                'f': lambda p, t: dsc_loss(p, t[2])
+                'f': lambda p, t: dsc_loss(p, t)
             },
             {
                 'name': 'xentropy',
                 'weight': 1,
                 'f': lambda p, t: F.binary_cross_entropy(
-                    p, t[2].type_as(p).to(p.device),
+                    p, t.type_as(p).to(p.device),
                 )
             }
         ]
@@ -89,12 +89,12 @@ class NewLesionsUNet(BaseModel):
             {
                 'name': 'pdsc',
                 'weight': 0,
-                'f': lambda p, t: dsc_loss(p, t[2])
+                'f': lambda p, t: dsc_loss(p, t)
             },
             {
                 'name': 'dsc',
                 'weight': 1,
-                'f': lambda p, t: dsc_loss(p > 0.5, t[2])
+                'f': lambda p, t: dsc_loss(p > 0.5, t)
             },
         ]
 

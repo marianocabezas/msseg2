@@ -157,17 +157,13 @@ class LongitudinalCroppingDataset(Dataset):
             source[none_slice + slice_i].astype(np.float32),
             target[none_slice + slice_i].astype(np.float32),
         )
-        target_data = (
-            source[none_slice + slice_i].astype(np.float32),
-            target[none_slice + slice_i].astype(np.float32),
-            np.expand_dims(labels[slice_i].astype(np.uint8), axis=0)
-        )
+        target_data = np.expand_dims(labels[slice_i].astype(np.uint8), axis=0)
         if flip:
-            target_data = (
-                np.fliplr(target_data[0]).copy(),
-                np.fliplr(target_data[1]).copy(),
-                np.fliplr(target_data[2]).copy()
+            data = (
+                np.fliplr(data[0]).copy(),
+                np.fliplr(data[1]).copy(),
             )
+            target_data = np.fliplr(target_data).copy()
 
         return data, target_data
 
