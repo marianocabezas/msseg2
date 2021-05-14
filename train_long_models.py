@@ -241,7 +241,7 @@ def train_net(
 
 def test_net(
     net, patients,
-    filename='positive_activity.nii.gz',
+    filename='positive_activity_xval.nii.gz',
     brain_name='brain_mask.nii.gz',
     bl_name='flair_time01_on_middle_space_n4.nii.gz',
     fu_name='flair_time02_on_middle_space_n4.nii.gz',
