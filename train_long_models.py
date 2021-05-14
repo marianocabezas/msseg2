@@ -363,7 +363,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             )
         )
         seg_unet = NewLesionsUNet(device=device, n_images=1)
-        model_name = 'positive.unet_n{:d}.e{:d}.p{:d}.mdl'.format(
+        model_name = 'positive.unet_n{:d}.mdl'.format(
             i, epochs, patience
         )
         train_net(
