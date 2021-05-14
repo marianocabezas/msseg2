@@ -36,7 +36,7 @@ def dsc_loss(pred, target, eps=1e-5):
     num = (2 * torch.sum(pred * target, dim=reduce_dims))
     den = torch.sum(pred + target, dim=reduce_dims).clamp(min=eps)
     dsc_k = num / den
-    print(dsc_k)
+    print(dsc_k, num, den)
     dsc = 1 - torch.mean(dsc_k)
 
     return torch.clamp(dsc, 0., 1.)
