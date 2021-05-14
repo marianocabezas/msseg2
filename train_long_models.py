@@ -118,7 +118,7 @@ def get_data(
 
 
 def train_net(
-        net, model_name, train_patients, val_patients, images, epochs=None,
+        net, model_name, train_patients, val_patients, epochs=None,
         patience=None, verbose=1
 ):
     """
@@ -129,7 +129,6 @@ def train_net(
         :param model_name:
         :param train_patients:
         :param val_patients:
-        :param images:
         :param epochs:
         :param patience:
         :param verbose: Verbosity level.
@@ -338,7 +337,6 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
     gpu = parse_args()['gpu_id']
     cuda = torch.cuda.is_available()
     device = torch.device('cuda:%d' % gpu if cuda else 'cpu')
-    images = ['flair']
 
     for i in range(n_folds):
         if verbose > 0:
@@ -363,11 +361,11 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             )
         )
         seg_unet = NewLesionsUNet(device=device, n_images=1)
-        model_name = 'positive.unet_n{:d}.pt'.format(
+        model_name = 'positive-unet_n{:d}.pt'.format(
             i, epochs, patience
         )
         train_net(
-            seg_unet, model_name, train_patients, val_patients, images,
+            seg_unet, model_name, train_patients, val_patients,
             verbose=verbose
         )
 
@@ -377,7 +375,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                 c['nc']
             )
         )
-        test_net(seg_unet, test_patients, images, verbose=verbose)
+        test_net(seg_unet, test_patients, verbose=verbose)
 
 
 def main():
