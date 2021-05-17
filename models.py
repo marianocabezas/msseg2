@@ -2,12 +2,12 @@ import time
 import itertools
 import torch
 from torch import nn
-import torch.nn.functional as F
 import numpy as np
 from base import BaseModel, ResConv3dBlock
 from base import Autoencoder
 from utils import time_to_string, to_torch_var
-from criteria import gendsc_loss, new_loss, dsc_binary_loss
+from criteria import gendsc_loss, new_loss
+from criteria import tp_binary_loss, tn_binary_loss, dsc_binary_loss
 
 
 def norm_f(n_f):
@@ -99,6 +99,16 @@ class NewLesionsUNet(BaseModel):
                 'name': 'dsc',
                 'weight': 1,
                 'f': lambda p, t: dsc_binary_loss(p, t)
+            },
+            {
+                'name': 'fn',
+                'weight': 1,
+                'f': lambda p, t: tp_binary_loss(p, t)
+            },
+            {
+                'name': 'fp',
+                'weight': 1,
+                'f': lambda p, t: tn_binary_loss(p, t)
             },
         ]
 
