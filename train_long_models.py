@@ -412,7 +412,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             seg_unet = NewLesionsUNet(device=device, n_images=1)
         else:
             seg_unet = NewLesionsUNet(
-                device=device, n_images=1, conv_filters=[16, 32, 64, 128, 256]
+                device=device, n_images=1, conv_filters=[8, 32, 64, 128, 256]
             )
         model_name = 'positive-unet_n{:d}.pt'.format(
             i, epochs, patience

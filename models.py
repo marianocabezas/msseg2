@@ -11,7 +11,7 @@ from criteria import gendsc_loss, new_loss, dsc_binary_loss
 
 
 def norm_f(n_f):
-    return nn.GroupNorm(n_f // 8, n_f)
+    return nn.GroupNorm(n_f // 4, n_f)
 
 
 def print_batch(pi, n_patches, i, n_cases, t_in, t_case_in):
