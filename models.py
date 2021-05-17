@@ -135,13 +135,15 @@ class NewLesionsUNet(BaseModel):
 
     def new_lesions_patch(
         self, source, target, patch_size, batch_size,
-        case=0, n_cases=1
+        case=0, n_cases=1, t_start=None
     ):
         # Init
         self.eval()
 
         # Init
         t_in = time.time()
+        if t_start is None:
+            t_start = t_in
 
         # This branch is only used when images are too big. In this case
         # they are split in patches and each patch is trained separately.
@@ -205,7 +207,7 @@ class NewLesionsUNet(BaseModel):
                 seg[xslice, yslice, zslice] += seg_bi
 
             # Printing
-            print_batch(bi, n_batches, case, n_cases, t_in, t_in)
+            print_batch(bi, n_batches, case, n_cases, t_start, t_in)
 
         seg /= counts
 
