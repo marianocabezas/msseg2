@@ -13,7 +13,7 @@ from scipy.ndimage.morphology import binary_closing as imclose
 from scipy.ndimage.morphology import binary_erosion as imerode
 from scipy.ndimage.morphology import binary_dilation as imdilate
 from scipy.ndimage.morphology import binary_fill_holes
-from utils import find_file, get_dirs, time_f
+from utils import find_file, get_dirs, time_f, get_normalised_image
 from utils import color_codes, print_message
 
 
@@ -201,8 +201,10 @@ def subtraction(followup_name, baseline_name, mask, path):
     sub_name = os.path.join(
         path, 'subtraction.nii.gz'
     )
+    followup_image = get_normalised_image(followup_name)
+    baseline_image = get_normalised_image(baseline_name)
     sub_nii = nib.Nifti1Image(
-        followup.get_fdata() - baseline.get_fdata(),
+        followup_image - baseline_image,
         followup.get_qform(),
         followup.header
     )
