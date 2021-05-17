@@ -180,20 +180,15 @@ class LongitudinalDataset(Dataset):
         self, source, target, activity, masks, positive_only=True
     ):
         # Init
-        if positive_only:
-            self.valid = [i for i, a in enumerate(activity) if np.sum(a) > 0]
-        else:
-            self.valid = list(range(len(activity)))
-
         self.source = source
         self.target = target
         self.masks = masks
         self.labels = activity
 
     def __getitem__(self, index):
-        flip = index >= len(self.valid)
+        flip = index >= len(self.labels)
         if flip:
-            index -= len(self.valid)
+            index -= len(self.labels)
 
         source = self.source[index]
         target = self.target[index]
@@ -216,4 +211,4 @@ class LongitudinalDataset(Dataset):
         return data, target_data
 
     def __len__(self):
-        return len(self.valid) * 2
+        return len(self.labels) * 2

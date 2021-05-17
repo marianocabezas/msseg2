@@ -11,7 +11,7 @@ from utils import get_mask, get_normalised_image
 from utils import color_codes
 from models import NewLesionsUNet
 from utils import remove_small_regions
-from datasets import LongitudinalCroppingDataset
+from datasets import LongitudinalCroppingDataset, LongitudinalDataset
 
 
 def parse_args():
@@ -182,9 +182,9 @@ def train_net(
         # Datasets / Dataloaders should be added here
         if verbose > 1:
             print('Preparing the training datasets / dataloaders')
-        batch_size = parse_args()['batch_size']
-        patch_size = parse_args()['patch_size']
-        overlap = parse_args()['patch_size'] // 2
+        # batch_size = parse_args()['batch_size']
+        # patch_size = parse_args()['patch_size']
+        # overlap = parse_args()['patch_size'] // 2
         num_workers = 16
 
         print('Loading the {:}training{:} data'.format(c['b'], c['nc']))
@@ -198,22 +198,34 @@ def train_net(
 
         if verbose > 1:
             print('Training dataset (with validation)')
-        train_dataset = LongitudinalCroppingDataset(
-            train_source, train_target, train_masks, train_brains,
-            patch_size=patch_size, overlap=overlap
+        # train_dataset = LongitudinalCroppingDataset(
+        #     train_source, train_target, train_masks, train_brains,
+        #     patch_size=patch_size, overlap=overlap
+        # )
+        # train_dataloader = DataLoader(
+        #     train_dataset, batch_size, True, num_workers=num_workers
+        # )
+        train_dataset = LongitudinalDataset(
+            train_source, train_target, train_masks, train_brains
         )
         train_dataloader = DataLoader(
-            train_dataset, batch_size, True, num_workers=num_workers
+            train_dataset, 1, True, num_workers=num_workers
         )
 
         if verbose > 1:
             print('Validation dataset (with validation)')
-        val_dataset = LongitudinalCroppingDataset(
-            val_source, val_target, val_masks, val_brains,
-            patch_size=patch_size, filtered=False
+        # val_dataset = LongitudinalCroppingDataset(
+        #     val_source, val_target, val_masks, val_brains,
+        #     patch_size=patch_size, filtered=False
+        # )
+        # val_dataloader = DataLoader(
+        #     val_dataset, 4 * batch_size, num_workers=num_workers
+        # )
+        val_dataset = LongitudinalDataset(
+            val_source, val_target, val_masks, val_brains
         )
         val_dataloader = DataLoader(
-            val_dataset, 4 * batch_size, num_workers=num_workers
+            val_dataset, 1, num_workers=num_workers
         )
 
         training_start = time.time()
@@ -373,14 +385,22 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                     c['clr'] + c['c'], c['g'], i + 1, n_folds, c['nc']
                 )
             )
-        # Training
-        ini_test = len(patients) * i // n_folds
-        end_test = len(patients) * (i + 1) // n_folds
-        training_set = patients[end_test:] + patients[:ini_test]
+        # > Training cases
+        # We will avoid "negative" samples during training.
+        # Indices
+        ini_pos = len(positive_cases) * i // n_folds
+        end_pos = len(positive_cases) * (i + 1) // n_folds
+        ini_neg = len(negative_cases) * i // n_folds
+        end_neg = len(negative_cases) * (i + 1) // n_folds
+        training_set = positive_cases[end_pos:] + positive_cases[:ini_pos]
         val_idx = max(1, int(val_split * len(training_set)))
         val_patients = training_set[:val_idx]
         train_patients = training_set[val_idx:]
-        test_patients = patients[ini_test:end_test]
+
+        # > Testing cases
+        test_pos = positive_cases[ini_pos:end_pos]
+        test_neg = negative_cases[ini_neg:end_neg]
+        test_patients = test_pos + test_neg
 
         print(
             '{:}[{:}]{:} Positive activity {:}Unet{:}'.format(
@@ -388,7 +408,12 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                 c['nc']
             )
         )
-        seg_unet = NewLesionsUNet(device=device, n_images=1)
+        if parse_args()['init_model_dir'] is not None:
+            seg_unet = NewLesionsUNet(device=device, n_images=1)
+        else:
+            seg_unet = NewLesionsUNet(
+                device=device, n_images=1, conv_filters=[16, 32, 64, 128, 256]
+            )
         model_name = 'positive-unet_n{:d}.pt'.format(
             i, epochs, patience
         )

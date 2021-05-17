@@ -49,7 +49,7 @@ class NewLesionsUNet(BaseModel):
         self.init = False
         # Init values
         if conv_filters is None:
-            self.conv_filters = list([32, 64, 128, 256, 512])
+            self.conv_filters = [32, 64, 128, 256, 512]
         else:
             self.conv_filters = conv_filters
         self.epoch = 0
