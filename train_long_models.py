@@ -305,7 +305,7 @@ def test_net(
                 seg_bb = net.new_lesions_patch(
                     np.expand_dims(bl[bb], axis=0),
                     np.expand_dims(fu[bb], axis=0),
-                    32, 16
+                    32, 16, p, len(patients)
                 )
                 seg[bb] = seg_bb
 

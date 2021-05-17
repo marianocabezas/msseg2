@@ -134,9 +134,8 @@ class NewLesionsUNet(BaseModel):
         return seg[0, 0].cpu().numpy()
 
     def new_lesions_patch(
-            self, source,
-            target, patch_size, batch_size,
-            verbose=True
+        self, source, target, patch_size, batch_size,
+        case=0, n_cases=1
     ):
         # Init
         self.eval()
@@ -206,7 +205,7 @@ class NewLesionsUNet(BaseModel):
                 seg[xslice, yslice, zslice] += seg_bi
 
             # Printing
-            print_batch(bi, n_batches, 0, 1, t_in, t_in)
+            print_batch(bi, n_batches, case, n_cases, t_in, t_in)
 
         seg /= counts
 
