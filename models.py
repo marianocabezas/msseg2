@@ -7,7 +7,7 @@ import numpy as np
 from base import BaseModel, ResConv3dBlock
 from base import Autoencoder
 from utils import time_to_string, to_torch_var
-from criteria import dsc_loss, dsc_binary_loss
+from criteria import gendsc_loss, new_loss, dsc_binary_loss
 
 
 def norm_f(n_f):
@@ -76,19 +76,24 @@ class NewLesionsUNet(BaseModel):
             #     'f': lambda p, t: dsc_loss(p, t)
             # },
             {
-                'name': 'xentropy',
+                'name': 'dsc',
                 'weight': 1,
-                'f': lambda p, t: F.binary_cross_entropy(
-                    p, t.type_as(p).to(p.device),
-                )
-            }
+                'f': lambda p, t: new_loss(p, t)
+            },
+            # {
+            #     'name': 'xentropy',
+            #     'weight': 1,
+            #     'f': lambda p, t: F.binary_cross_entropy(
+            #         p, t.type_as(p).to(p.device),
+            #     )
+            # }
         ]
 
         self.val_functions = [
             {
                 'name': 'pdsc',
                 'weight': 0,
-                'f': lambda p, t: dsc_loss(p, t)
+                'f': lambda p, t: gendsc_loss(p, t, w_bg=0, w_fg=1)
             },
             {
                 'name': 'dsc',
