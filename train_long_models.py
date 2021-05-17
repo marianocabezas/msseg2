@@ -259,7 +259,7 @@ def test_net(
         else:
             filename = 'positive_activity_ft.nii.gz'
     else:
-        filename = 'positive_activity_xval.nii.gz',
+        filename = 'positive_activity_xval.nii.gz'
 
     test_start = time.time()
     tests = len(patients)
