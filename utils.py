@@ -165,12 +165,15 @@ Data related functions
 """
 
 
-def get_bb(mask):
+def get_bb(mask, dilate=0):
     """
 
     :param mask:
+    :param dilate:
     :return:
     """
+    if dilate > 0:
+        mask = imdilate(mask, iterations=dilate)
     idx = np.where(mask)
     bb = tuple(
         slice(min_i, max_i)

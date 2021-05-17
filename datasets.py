@@ -2,6 +2,7 @@ import itertools
 from copy import deepcopy
 import numpy as np
 from torch.utils.data.dataset import Dataset
+from utils import get_bb
 
 
 ''' Utility function for patch creation '''
@@ -136,7 +137,6 @@ class LongitudinalCroppingDataset(Dataset):
             ]
 
     def __getitem__(self, index):
-        flip = False
         if index < (2 * len(self.patch_slices)):
             flip = index >= len(self.patch_slices)
             if flip:
@@ -173,3 +173,47 @@ class LongitudinalCroppingDataset(Dataset):
             return len(self.patch_slices) * 4
         else:
             return len(self.patch_slices)
+
+
+class LongitudinalDataset(Dataset):
+    def __init__(
+        self, source, target, activity, masks, positive_only=True
+    ):
+        # Init
+        if positive_only:
+            self.valid = [i for i, a in enumerate(activity) if np.sum(a) > 0]
+        else:
+            self.valid = list(range(len(activity)))
+
+        self.source = source
+        self.target = target
+        self.masks = masks
+        self.labels = activity
+
+    def __getitem__(self, index):
+        flip = index >= len(self.valid)
+        if flip:
+            index -= len(self.valid)
+
+        source = self.source[index]
+        target = self.target[index]
+        labels = self.labels[index]
+        none_slice = (slice(None, None),)
+        bb = get_bb(self.masks[index], 2)
+        # Patch "extraction".
+        data = (
+            source[none_slice + bb].astype(np.float32),
+            target[none_slice + bb].astype(np.float32),
+        )
+        target_data = np.expand_dims(labels[bb].astype(np.uint8), axis=0)
+        if flip:
+            data = (
+                np.fliplr(data[0]).copy(),
+                np.fliplr(data[1]).copy(),
+            )
+            target_data = np.fliplr(target_data).copy()
+
+        return data, target_data
+
+    def __len__(self):
+        return len(self.valid) * 2
