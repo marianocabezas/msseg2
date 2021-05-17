@@ -241,7 +241,6 @@ def train_net(
 
 def test_net(
     net, patients,
-    filename='positive_activity_xval.nii.gz',
     brain_name='brain_mask.nii.gz',
     bl_name='flair_time01_on_middle_space_n4.nii.gz',
     fu_name='flair_time02_on_middle_space_n4.nii.gz',
@@ -251,6 +250,16 @@ def test_net(
     c = color_codes()
     d_path = parse_args()['d_path']
     seg_list = list()
+
+    initial_model = parse_args()['init_model_dir']
+    fine_tuning = parse_args()['freeze_ae']
+    if initial_model is not None:
+        if fine_tuning:
+            filename = 'positive_activity_ft-freeze.nii.gz'
+        else:
+            filename = 'positive_activity_ft.nii.gz'
+    else:
+        filename = 'positive_activity_xval.nii.gz',
 
     test_start = time.time()
     tests = len(patients)
@@ -340,6 +349,16 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
     c = color_codes()
     d_path = parse_args()['d_path']
     patients = sorted(get_dirs(d_path))
+
+    positive_cases = [
+        '013', '016', '018', '020', '021', '024', '026', '027', '029', '030',
+        '032', '035', '037', '039', '043', '047', '048', '057', '061', '069',
+        '074', '077', '083', '088', '091', '094', '095', '099', '100'
+    ]
+    negative_cases = [
+        '015', '019', '049', '051', '052', '068', '070', '084', '089', '090',
+        '096'
+    ]
 
     patience = parse_args()['patience']
     epochs = parse_args()['epochs']

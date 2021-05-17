@@ -197,7 +197,6 @@ def subtraction(followup_name, baseline_name, mask, path):
     # First we'll compute the plain old subtractions.
     # Then we'll apply masks and smoothing.
     followup = load_nii(followup_name)
-    baseline = load_nii(baseline_name)
     sub_name = os.path.join(
         path, 'subtraction.nii.gz'
     )
