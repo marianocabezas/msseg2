@@ -207,7 +207,7 @@ class NewLesionsUNet(BaseModel):
                 seg[xslice, yslice, zslice] += seg_bi
 
             # Printing
-            print_batch(bi, n_batches, case, n_cases, t_start, t_in)
+            print_batch(bi, n_batches, 0, 1, t_start, t_in)
 
         seg /= counts
 
