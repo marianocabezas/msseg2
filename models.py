@@ -2,6 +2,7 @@ import time
 import itertools
 import torch
 from torch import nn
+import torch.nn.functional as F
 import numpy as np
 from base import BaseModel, ResConv3dBlock
 from base import Autoencoder
