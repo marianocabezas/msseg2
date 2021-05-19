@@ -256,6 +256,7 @@ def test_net(
     brain_name='brain_mask.nii.gz',
     bl_name='flair_time01_on_middle_space_n4.nii.gz',
     fu_name='flair_time02_on_middle_space_n4.nii.gz',
+    train=False,
     verbose=1
 ):
     # Init
@@ -272,6 +273,9 @@ def test_net(
             filename = 'positive_activity_ft.nii.gz'
     else:
         filename = 'positive_activity_xval.nii.gz'
+
+    if train:
+        filename = 'train_' + filename
 
     test_start = time.time()
     tests = len(patients)
@@ -424,6 +428,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                 c['nc']
             )
         )
+        test_net(seg_unet, train_patients, train=True, verbose=verbose)
         test_net(seg_unet, test_patients, verbose=verbose)
 
 
