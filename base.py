@@ -590,18 +590,13 @@ class Autoencoder(BaseModel):
 
 
 class BaseConv3dBlock(BaseModel):
-    def __init__(self, filters_in, filters_out, kernel, inv):
+    def __init__(self, filters_in, filters_out, kernel):
         super().__init__()
-        if not inv:
-            self.conv = partial(
-                nn.Conv3d, kernel_size=kernel, padding=kernel // 2
-            )
-        else:
-            self.conv = partial(
-                nn.ConvTranspose3d, kernel_size=kernel, padding=kernel // 2
-            )
+        self.conv = partial(
+            nn.Conv3d, kernel_size=kernel, padding=kernel // 2
+        )
 
-    def forward(self, inputs):
+    def forward(self, inputs, *args, **kwargs):
         return self.conv(inputs)
 
     @staticmethod
@@ -622,15 +617,12 @@ class BaseConv3dBlock(BaseModel):
 class ResConv3dBlock(BaseConv3dBlock):
     def __init__(
             self, filters_in, filters_out,
-            kernel=3, norm=None, activation=None, inv=False
+            kernel=3, norm=None, activation=None
     ):
-        super().__init__(filters_in, filters_out, kernel, inv)
+        super().__init__(filters_in, filters_out, kernel)
         if activation is None:
             activation = self.default_activation
-        if not inv:
-            conv = nn.Conv3d
-        else:
-            conv = nn.ConvTranspose3d
+        conv = nn.Conv3d
 
         self.conv = self.conv(filters_in, filters_out)
 
@@ -646,6 +638,72 @@ class ResConv3dBlock(BaseConv3dBlock):
             norm(filters_out)
         )
 
-    def forward(self, inputs):
+    def forward(self, inputs, *args, **kwargs):
         res = inputs if self.res is None else self.res(inputs)
         return self.end_seq(self.conv(inputs) + res)
+
+
+class ResPartialConv3dBlock(BaseConv3dBlock):
+    def __init__(
+            self, filters_in, filters_out, n_conv=1, kernel=3, norm=None,
+            activation=None
+    ):
+        super().__init__(filters_in, filters_out, kernel)
+        if activation is None:
+            activation = self.default_activation
+        if norm is None:
+            norm = self.default_norm
+        conv = nn.Conv3d
+
+        self.first = nn.Sequential(
+            self.conv(filters_in, filters_out),
+            activation(filters_out),
+            norm(filters_out)
+        )
+
+        if filters_in != filters_out:
+            self.res = nn.Sequential(
+                conv(filters_in, filters_out, 1),
+                activation(filters_out),
+                norm(filters_out)
+            )
+        else:
+            self.res = None
+
+        self.seq = nn.ModuleList([
+            nn.Sequential(
+                self.conv(filters_out, filters_out),
+                activation(filters_out),
+                norm(filters_out)
+            )
+            for _ in range(n_conv - 1)
+        ])
+
+    def forward(self, inputs, mask=None, *args, **kwargs):
+        # Residual (should not be affected by mask)
+        res = inputs if self.res is None else self.res(inputs)
+
+        with torch.no_grad():
+            weight = torch.ones(
+                self.filters_out, self.filters_in, self.kernel, self.kernel,
+                self.kernel
+            )
+
+            mask_in = mask.expand(-1, self.filters_in, -1, -1, -1)
+            update_mask = F.conv3d(
+                mask_in.type_as(inputs).to(inputs.device),
+                weight.type_as(inputs).to(inputs.device),
+                bias=None, stride=1, padding=self.padding, groups=1
+            )
+            winsize = np.prod(weight.shape[1:])
+
+            mask_ratio = torch.zeros_like(update_mask)
+            valid_mask = update_mask > 0
+            mask_ratio[valid_mask] = winsize / update_mask[valid_mask]
+
+        # Partial convolution
+        inputs = inputs * mask.type_as(inputs).to(inputs.device)
+        output = mask_ratio * self.first(inputs)
+        for ci, c in enumerate(self.seq):
+            output = mask_ratio * c(output)
+        return output + res
