@@ -71,23 +71,23 @@ class NewLesionsUNet(BaseModel):
 
         # <Loss function setup>
         self.train_functions = [
-            # {
-            #     'name': 'dsc',
-            #     'weight': 1,
-            #     'f': lambda p, t: dsc_loss(p, t)
-            # },
             {
-                'name': 'new',
+                'name': 'dsc',
                 'weight': 1,
-                'f': lambda p, t: new_loss(p, t)
+                'f': lambda p, t: gendsc_loss(p, t, w_bg=0, w_fg=1)
             },
             # {
-            #     'name': 'xentropy',
+            #     'name': 'new',
             #     'weight': 1,
-            #     'f': lambda p, t: F.binary_cross_entropy(
-            #         p, t.type_as(p).to(p.device),
-            #     )
-            # }
+            #     'f': lambda p, t: new_loss(p, t)
+            # },
+            {
+                'name': 'xentropy',
+                'weight': 1,
+                'f': lambda p, t: F.binary_cross_entropy(
+                    p, t.type_as(p).to(p.device),
+                )
+            }
         ]
 
         self.val_functions = [
