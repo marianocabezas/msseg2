@@ -10,7 +10,7 @@ from utils import get_dirs, time_to_string, find_file
 from utils import get_mask, get_normalised_image
 from utils import color_codes
 from models import NewLesionsUNet
-from utils import remove_small_regions
+from utils import remove_small_regions, get_bb
 from datasets import LongitudinalCroppingDataset, LongitudinalDataset
 
 
@@ -300,29 +300,23 @@ def test_net(
             fu = get_normalised_image(pfu_name, brain_bin)
 
             # Brain mask
-            idx = np.where(brain_bin)
-            bb = tuple(
-                slice(min_i, max_i)
-                for min_i, max_i in zip(
-                    np.min(idx, axis=-1), np.max(idx, axis=-1)
-                )
-            )
+            bb = get_bb(brain_bin, 2)
 
-            seg = net.new_lesions(
-                np.expand_dims(bl, axis=0), np.expand_dims(fu, axis=0)
+            seg_bb = net.new_lesions(
+                np.expand_dims(bl[bb], axis=0), np.expand_dims(fu[bb], axis=0)
             )
             # try:
             #     seg = net.new_lesions(
             #         np.expand_dims(bl, axis=0), np.expand_dims(fu, axis=0)
             #     )
             # except RuntimeError:
-            #     seg = np.zeros(brain_bin.shape)
+            seg = np.zeros(brain_bin.shape)
             #     seg_bb = net.new_lesions_patch(
             #         np.expand_dims(bl[bb], axis=0),
             #         np.expand_dims(fu[bb], axis=0),
             #         32, 16, i, len(patients), test_start
             #     )
-            #     seg[bb] = seg_bb
+            seg[bb] = seg_bb
 
             seg[np.logical_not(brain_bin)] = 0
             seg_nii = nib.Nifti1Image(
