@@ -76,18 +76,18 @@ class NewLesionsUNet(BaseModel):
             #     'weight': 1,
             #     'f': lambda p, t: dsc_loss(p, t)
             # },
-            # {
-            #     'name': 'dsc',
-            #     'weight': 1,
-            #     'f': lambda p, t: new_loss(p, t)
-            # },
             {
-                'name': 'xentropy',
+                'name': 'dsc',
                 'weight': 1,
-                'f': lambda p, t: F.binary_cross_entropy(
-                    p, t.type_as(p).to(p.device),
-                )
-            }
+                'f': lambda p, t: new_loss(p, t, gamma=1)
+            },
+            # {
+            #     'name': 'xentropy',
+            #     'weight': 1,
+            #     'f': lambda p, t: F.binary_cross_entropy(
+            #         p, t.type_as(p).to(p.device),
+            #     )
+            # }
         ]
 
         self.val_functions = [
