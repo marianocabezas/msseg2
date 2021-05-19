@@ -92,7 +92,6 @@ class WeightedLoss(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        print(ctx.weight_bg, ctx.weight_fg)
         pred_y, target = ctx.saved_tensors
 
         negative = (1 - target) * pred_y ** ctx.gamma
