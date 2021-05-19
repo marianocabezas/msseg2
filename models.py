@@ -79,7 +79,7 @@ class NewLesionsUNet(BaseModel):
             {
                 'name': 'dsc',
                 'weight': 1,
-                'f': lambda p, t: new_loss(p, t, gamma=1)
+                'f': lambda p, t: new_loss(p, t, weight_bg=0.1, weight_fg=0.9)
             },
             # {
             #     'name': 'xentropy',
