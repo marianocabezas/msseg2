@@ -308,18 +308,21 @@ def test_net(
                 )
             )
 
-            try:
-                seg = net.new_lesions(
-                    np.expand_dims(bl, axis=0), np.expand_dims(fu, axis=0)
-                )
-            except RuntimeError:
-                seg = np.zeros(brain_bin.shape)
-                seg_bb = net.new_lesions_patch(
-                    np.expand_dims(bl[bb], axis=0),
-                    np.expand_dims(fu[bb], axis=0),
-                    32, 16, i, len(patients), test_start
-                )
-                seg[bb] = seg_bb
+            seg = net.new_lesions(
+                np.expand_dims(bl, axis=0), np.expand_dims(fu, axis=0)
+            )
+            # try:
+            #     seg = net.new_lesions(
+            #         np.expand_dims(bl, axis=0), np.expand_dims(fu, axis=0)
+            #     )
+            # except RuntimeError:
+            #     seg = np.zeros(brain_bin.shape)
+            #     seg_bb = net.new_lesions_patch(
+            #         np.expand_dims(bl[bb], axis=0),
+            #         np.expand_dims(fu[bb], axis=0),
+            #         32, 16, i, len(patients), test_start
+            #     )
+            #     seg[bb] = seg_bb
 
             seg[np.logical_not(brain_bin)] = 0
             seg_nii = nib.Nifti1Image(
@@ -412,7 +415,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             seg_unet = NewLesionsUNet(device=device, n_images=1)
         else:
             seg_unet = NewLesionsUNet(
-                device=device, n_images=1, conv_filters=[8, 32, 64, 128, 256]
+                device=device, n_images=1, conv_filters=[8, 16, 32, 64, 128, 256]
             )
         model_name = 'positive-unet_n{:d}.pt'.format(
             i, epochs, patience
