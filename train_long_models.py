@@ -87,7 +87,7 @@ def get_data(
     brain_name='brain_mask.nii.gz',
     bl_name='flair_time01_on_middle_space_n4.nii.gz',
     fu_name='flair_time02_on_middle_space_n4.nii.gz',
-    positive_name='positive_activity.nii.gz',
+    positive_name='ground_truth.nii.gz',
 ):
     if d_path is None:
         d_path = parse_args()['dataset_path']
@@ -357,7 +357,6 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
     # Init
     c = color_codes()
     d_path = parse_args()['d_path']
-    patients = sorted(get_dirs(d_path))
 
     positive_cases = [
         '013', '016', '018', '020', '021', '024', '026', '027', '029', '030',

@@ -177,7 +177,7 @@ class LongitudinalCroppingDataset(Dataset):
 
 class LongitudinalDataset(Dataset):
     def __init__(
-        self, source, target, activity, masks, positive_only=True
+        self, source, target, activity, masks
     ):
         # Init
         self.source = source
