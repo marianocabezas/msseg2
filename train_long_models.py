@@ -401,15 +401,21 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
         test_neg = negative_cases[ini_neg:end_neg]
         test_patients = test_pos + test_neg
 
-        print(
-            '{:}[{:}]{:} Positive activity {:}Unet{:}'.format(
-                c['c'], time.strftime("%H:%M:%S"), c['g'], c['nc'] + c['b'],
-                c['nc']
-            )
-        )
         if parse_args()['init_model_dir'] is not None:
+            print(
+                '{:}[{:}]{:} Positive activity {:}Unet{:}'.format(
+                    c['c'], time.strftime("%H:%M:%S"), c['g'], c['nc'] + c['b'],
+                    c['nc']
+                )
+            )
             seg_unet = NewLesionsUNet(device=device, n_images=1)
         else:
+            print(
+                '{:}[{:}]{:} Positive activity {:}Unet (attention){:}'.format(
+                    c['c'], time.strftime("%H:%M:%S"), c['g'], c['nc'] + c['b'],
+                    c['nc']
+                )
+            )
             seg_unet = NewLesionsAttUNet(device=device, n_images=1)
         model_name = 'positive-unet_n{:d}.pt'.format(
             i, epochs, patience
