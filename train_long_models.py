@@ -306,20 +306,20 @@ def test_net(
             # Brain mask
             bb = get_bb(brain_bin, 2)
 
-            seg_bb = net.new_lesions(
-                np.expand_dims(bl[bb], axis=0), np.expand_dims(fu[bb], axis=0)
-            )
+            # seg_bb = net.new_lesions(
+            #     np.expand_dims(bl[bb], axis=0), np.expand_dims(fu[bb], axis=0)
+            # )
             # try:
             #     seg = net.new_lesions(
             #         np.expand_dims(bl, axis=0), np.expand_dims(fu, axis=0)
             #     )
             # except RuntimeError:
             seg = np.zeros(brain_bin.shape)
-            #     seg_bb = net.new_lesions_patch(
-            #         np.expand_dims(bl[bb], axis=0),
-            #         np.expand_dims(fu[bb], axis=0),
-            #         32, 16, i, len(patients), test_start
-            #     )
+            seg_bb = net.new_lesions_patch(
+                np.expand_dims(bl[bb], axis=0),
+                np.expand_dims(fu[bb], axis=0),
+                32, 16, i, len(patients), test_start
+            )
             seg[bb] = seg_bb
 
             seg[np.logical_not(brain_bin)] = 0
