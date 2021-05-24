@@ -512,12 +512,9 @@ class DualAttentionAutoencoder(BaseModel):
         down_inputs = []
         for c in self.down:
             c.to(self.device)
-            input_s = c[0](input_s)
-            input_t = c[0](input_t)
-            down_inputs.append((input_s, input_t))
-            for layer in c[1:]:
-                input_s = layer(input_s)
-                input_t = layer(input_t)
+            input_s, feat_s = c(input_s)
+            input_t, feat_t = c(input_t)
+            down_inputs.append((feat_s, feat_t))
             input_s = F.max_pool3d(input_s, 2)
             input_t = F.max_pool3d(input_t, 2)
 
@@ -533,10 +530,8 @@ class DualAttentionAutoencoder(BaseModel):
             i_s_norm = F.instance_norm(i_s)
             i_t_norm = F.instance_norm(i_t)
             alpha = torch.abs(torch.mean(i_s_norm * i_t_norm, dim=1))
-            features = d[0](F.interpolate(inputs, size=alpha.size()[2:]))
+            features = d(F.interpolate(inputs, size=alpha.size()[2:]))
             inputs = torch.clamp(1 - alpha, 0, 1) * features
-            for layer in d[1:]:
-                inputs = layer(inputs)
 
         return inputs
 
@@ -754,72 +749,10 @@ class ResConv3dBlock(BaseConv3dBlock):
             norm(filters_out)
         )
 
-    def forward(self, inputs, *args, **kwargs):
+    def forward(self, inputs, return_linear=False, *args, **kwargs):
         res = inputs if self.res is None else self.res(inputs)
-        return self.end_seq(self.conv(inputs) + res)
-
-
-class ResPartialConv3dBlock(BaseConv3dBlock):
-    def __init__(
-            self, filters_in, filters_out, n_conv=1, kernel=3, norm=None,
-            activation=None
-    ):
-        super().__init__(filters_in, filters_out, kernel)
-        if activation is None:
-            activation = self.default_activation
-        if norm is None:
-            norm = self.default_norm
-        conv = nn.Conv3d
-
-        self.first = nn.Sequential(
-            self.conv(filters_in, filters_out),
-            activation(filters_out),
-            norm(filters_out)
-        )
-
-        if filters_in != filters_out:
-            self.res = nn.Sequential(
-                conv(filters_in, filters_out, 1),
-                activation(filters_out),
-                norm(filters_out)
-            )
+        data = self.conv(inputs) + res
+        if return_linear:
+            return self.end_seq(data), data
         else:
-            self.res = None
-
-        self.seq = nn.ModuleList([
-            nn.Sequential(
-                self.conv(filters_out, filters_out),
-                activation(filters_out),
-                norm(filters_out)
-            )
-            for _ in range(n_conv - 1)
-        ])
-
-    def forward(self, inputs, mask=None, *args, **kwargs):
-        # Residual (should not be affected by mask)
-        res = inputs if self.res is None else self.res(inputs)
-
-        with torch.no_grad():
-            weight = torch.ones(
-                self.filters_out, self.filters_in, self.kernel, self.kernel,
-                self.kernel
-            )
-
-            mask_in = mask.expand(-1, self.filters_in, -1, -1, -1)
-            update_mask = F.conv3d(
-                mask_in.type_as(inputs).to(inputs.device),
-                weight.type_as(inputs).to(inputs.device),
-                bias=None, stride=1, padding=self.padding, groups=1
-            )
-            winsize = np.prod(weight.shape[1:])
-
-            mask_ratio = torch.zeros_like(update_mask)
-            valid_mask = update_mask > 0
-            mask_ratio[valid_mask] = winsize / update_mask[valid_mask]
-
-        # Partial convolution
-        inputs = inputs * mask.type_as(inputs).to(inputs.device)
-        output = mask_ratio * self.first(inputs)
-        for ci, c in enumerate(self.seq):
-            output = mask_ratio * c(output)
-        return output + res
+            return self.end_seq(data)
