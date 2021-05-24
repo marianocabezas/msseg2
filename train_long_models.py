@@ -408,11 +408,9 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             )
         )
         if parse_args()['init_model_dir'] is not None:
-            seg_unet = NewLesionsAttUNet(device=device, n_images=1)
+            seg_unet = NewLesionsUNet(device=device, n_images=1)
         else:
-            seg_unet = NewLesionsUNet(
-                device=device, n_images=1, conv_filters=[8, 16, 32, 64, 128, 256]
-            )
+            seg_unet = NewLesionsAttUNet(device=device, n_images=1)
         model_name = 'positive-unet_n{:d}.pt'.format(
             i, epochs, patience
         )
