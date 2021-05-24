@@ -773,7 +773,7 @@ class ResConv3dBlock(BaseConv3dBlock):
 class AttentionBlock(BaseModel):
     def __init__(
             self, filters_in, filters_out, filters_att,
-            kernel=1, norm=None, activation=None
+            kernel=3, norm=None, activation=None
     ):
         super().__init__()
         if activation is None:
@@ -781,10 +781,10 @@ class AttentionBlock(BaseModel):
         conv = nn.Conv3d
 
         self.conv_q = conv(
-            filters_in, filters_att, kernel,
+            filters_in, filters_att, 1,
         )
         self.conv_k = conv(
-            filters_in, filters_att, kernel,
+            filters_in, filters_att, 1,
         )
         self.conv_v = conv(
             filters_in, filters_out, kernel,
