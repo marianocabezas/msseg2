@@ -535,7 +535,7 @@ class DualAttentionAutoencoder(BaseModel):
         return down_inputs, inputs
 
     def decode(self, inputs, down_inputs):
-        for d, a, (i_s, i_t) in zip(self.up, down_inputs[::-1]):
+        for d, a, (i_s, i_t) in zip(self.up, self.att, down_inputs[::-1]):
             d.to(self.device)
             i = a(i_s, i_t)
             inputs = torch.cat(
