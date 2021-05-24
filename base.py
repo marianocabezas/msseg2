@@ -479,10 +479,9 @@ class DualAttentionAutoencoder(BaseModel):
         self.device = device
         self.filters = conv_filters
 
-        conv_in = [n_inputs // 2] + conv_filters[:-2]
-        conv_out = conv_filters[:-1]
-        deconv_in = conv_filters[:0:-1]
-        deconv_out = conv_filters[-2::-1]
+        conv_in, conv_out, deconv_in, deconv_out = block.compute_filters(
+            n_inputs // 2, conv_filters
+        )
 
         # Down path
         # We'll use the partial and fill it with the channels for input and
@@ -494,7 +493,18 @@ class DualAttentionAutoencoder(BaseModel):
         ])
 
         # Bottleneck
-        self.u = block_partial(conv_filters[-2] * 2, conv_filters[-1])
+        self.u = AttentionBlock(
+            conv_filters[-2], conv_filters[-1], conv_filters[-2] // 2,
+            norm=norm, activation=activation
+        )
+
+        # Attention blocks
+        self.att = nn.ModuleList([
+            AttentionBlock(
+                f_in, f_in, f_in // 2, norm=norm, activation=activation
+            )
+            for f_in in conv_filters[-2::-1]
+        ])
 
         # Up path
         # Now we'll do the same we did on the down path, but mirrored. We also
@@ -513,28 +523,27 @@ class DualAttentionAutoencoder(BaseModel):
         down_inputs = []
         for c in self.down:
             c.to(self.device)
-            input_s, feat_s = c(input_s, return_linear=True)
-            input_t, feat_t = c(input_t, return_linear=True)
-            down_inputs.append((feat_s, feat_t))
+            input_s = c(input_s)
+            input_t = c(input_t)
+            down_inputs.append((input_s, input_t))
             input_s = F.max_pool3d(input_s, 2)
             input_t = F.max_pool3d(input_t, 2)
 
-        inputs = torch.cat([input_s, input_t], dim=1)
         self.u.to(self.device)
-        inputs = F.dropout3d(self.u(inputs), self.dropout, self.training)
+        inputs = F.dropout3d(self.u(input_s, input_t))
 
         return down_inputs, inputs
 
     def decode(self, inputs, down_inputs):
-        for d, (i_s, i_t) in zip(self.up, down_inputs[::-1]):
+        for d, a, (i_s, i_t) in zip(self.up, down_inputs[::-1]):
             d.to(self.device)
-            i_s_norm = F.instance_norm(i_s)
-            i_t_norm = F.instance_norm(i_t)
-            alpha = torch.abs(
-                torch.mean(i_s_norm * i_t_norm, dim=1, keepdim=True)
+            i = a(i_s, i_t)
+            inputs = torch.cat(
+                (F.interpolate(inputs, size=i.size()[2:]), i),
+                dim=1
             )
-            features = d(F.interpolate(inputs, size=alpha.size()[2:]))
-            inputs = torch.clamp(1 - alpha, 0, 1) * features
+            d(inputs)
+            inputs = d(F.interpolate(inputs, size=i.size()[2:]))
 
         return inputs
 
@@ -759,3 +768,41 @@ class ResConv3dBlock(BaseConv3dBlock):
             return self.end_seq(data), data
         else:
             return self.end_seq(data)
+
+
+class AttentionBlock(BaseModel):
+    def __init__(
+            self, filters_in, filters_out, filters_att,
+            kernel=1, norm=None, activation=None
+    ):
+        super().__init__()
+        if activation is None:
+            activation = self.default_activation
+        conv = nn.Conv3d
+
+        self.conv_q = conv(
+            filters_in, filters_att, kernel,
+        )
+        self.conv_k = conv(
+            filters_in, filters_att, kernel,
+        )
+        self.conv_v = conv(
+            filters_in, filters_out, kernel,
+        )
+
+        self.end_seq = nn.Sequential(
+            activation(filters_out),
+            norm(filters_out)
+        )
+
+    def forward(self, source, target):
+        query = F.instance_norm(self.conv_q(source))
+        key = F.instance_norm(self.conv_k(target))
+        value = self.conv_v(target)
+        alpha = torch.abs(
+            torch.mean(query * key, dim=1, keepdim=True)
+        )
+        features = torch.clamp(1 - alpha, 0, 1) * value
+        return self.end_seq(features)
+
+
