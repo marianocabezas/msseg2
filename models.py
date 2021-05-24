@@ -212,8 +212,7 @@ class NewLesionsUNet(BaseModel):
             with torch.no_grad():
                 target_tensor = to_torch_var(np.stack(target_batch, axis=0))
                 source_tensor = to_torch_var(np.stack(source_batch, axis=0))
-                data = torch.cat([source_tensor, target_tensor], dim=1)
-                seg_out = torch.sigmoid(self.segmenter(data))
+                seg_out = self(source_tensor, target_tensor)
                 torch.cuda.empty_cache()
 
             # Then we just fill the results image.
@@ -253,13 +252,12 @@ class NewLesionsAttUNet(NewLesionsUNet):
         self.dropout = dropout
 
         # <Parameter setup>
-        self.segmenter = nn.Sequential(
-            DualAttentionAutoencoder(
-                self.conv_filters, device, 2 * n_images, block=ResConv3dBlock,
-                norm=nn.InstanceNorm3d
-            ),
-            nn.Conv3d(self.conv_filters[0], 1, 1)
+        self.ae = DualAttentionAutoencoder(
+            self.conv_filters, device, 2 * n_images, block=ResConv3dBlock,
+            norm=norm_f
         )
+        self.ae.to(device)
+        self.segmenter = nn.Conv3d(self.conv_filters[0], 1, 1)
         self.segmenter.to(device)
 
         # <Optimizer setup>
@@ -275,3 +273,7 @@ class NewLesionsAttUNet(NewLesionsUNet):
                     ', '.join([vf['name'] for vf in self.val_functions])
                 )
             )
+
+    def forward(self, source, target):
+        features = self.ae(source, target)
+        return torch.sigmoid(self.segmenter(features))
