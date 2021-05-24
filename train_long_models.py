@@ -411,9 +411,9 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             seg_unet = NewLesionsUNet(device=device, n_images=1)
         else:
             print(
-                '{:}[{:}]{:} Positive activity {:}Unet (attention){:}'.format(
+                '{:}[{:}]{:} Positive activity {:}Unet {:} (attention){:}'.format(
                     c['c'], time.strftime("%H:%M:%S"), c['g'], c['nc'] + c['b'],
-                    c['nc']
+                    c['y'], c['nc']
                 )
             )
             seg_unet = NewLesionsAttUNet(device=device, n_images=1)
