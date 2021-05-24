@@ -103,12 +103,12 @@ class NewLesionsUNet(BaseModel):
             },
             {
                 'name': 'fn',
-                'weight': 1,
+                'weight': 0,
                 'f': lambda p, t: tp_binary_loss(p, t)
             },
             {
                 'name': 'fp',
-                'weight': 1,
+                'weight': 0,
                 'f': lambda p, t: tn_binary_loss(p, t)
             },
         ]
