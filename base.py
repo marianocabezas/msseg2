@@ -479,9 +479,10 @@ class DualAttentionAutoencoder(BaseModel):
         self.device = device
         self.filters = conv_filters
 
-        conv_in, conv_out, deconv_in, deconv_out = block.compute_filters(
-            n_inputs // 2, conv_filters
-        )
+        conv_in = [n_inputs // 2] + conv_filters[:-2]
+        conv_out = conv_filters[:-1]
+        deconv_in = conv_filters[:0:-1]
+        deconv_out = conv_filters[-2::-1]
 
         # Down path
         # We'll use the partial and fill it with the channels for input and
@@ -599,10 +600,9 @@ class Autoencoder(BaseModel):
         self.dropout = dropout
         self.filters = conv_filters
 
-        conv_in = [n_inputs // 2] + conv_filters[:-2]
-        conv_out = conv_filters[:-1]
-        deconv_in = conv_filters[:0:-1]
-        deconv_out = conv_filters[-2::-1]
+        conv_in, conv_out, deconv_in, deconv_out = block.compute_filters(
+            n_inputs, conv_filters
+        )
 
         # Down path
         # We'll use the partial and fill it with the channels for input and
