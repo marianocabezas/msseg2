@@ -529,7 +529,9 @@ class DualAttentionAutoencoder(BaseModel):
             d.to(self.device)
             i_s_norm = F.instance_norm(i_s)
             i_t_norm = F.instance_norm(i_t)
-            alpha = torch.abs(torch.mean(i_s_norm * i_t_norm, dim=1))
+            alpha = torch.abs(
+                torch.mean(i_s_norm * i_t_norm, dim=1, keepdim=True)
+            )
             features = d(F.interpolate(inputs, size=alpha.size()[2:]))
             inputs = torch.clamp(1 - alpha, 0, 1) * features
 
