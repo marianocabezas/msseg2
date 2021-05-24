@@ -512,9 +512,12 @@ class DualAttentionAutoencoder(BaseModel):
         down_inputs = []
         for c in self.down:
             c.to(self.device)
-            input_s = c(input_s)
-            input_t = c(input_t)
+            input_s = c[0](input_s)
+            input_t = c[0](input_t)
             down_inputs.append((input_s, input_t))
+            for layer in c[1:]:
+                input_s = layer(input_s)
+                input_t = layer(input_t)
             input_s = F.max_pool3d(input_s, 2)
             input_t = F.max_pool3d(input_t, 2)
 
@@ -527,9 +530,13 @@ class DualAttentionAutoencoder(BaseModel):
     def decode(self, inputs, down_inputs):
         for d, (i_s, i_t) in zip(self.up, down_inputs[::-1]):
             d.to(self.device)
-            alpha = torch.abs(torch.mean(i_s * i_t, dim=1))
-            features = d(F.interpolate(inputs, size=alpha.size()[2:]))
+            i_s_norm = F.instance_norm(i_s)
+            i_t_norm = F.instance_norm(i_t)
+            alpha = torch.abs(torch.mean(i_s_norm * i_t_norm, dim=1))
+            features = d[0](F.interpolate(inputs, size=alpha.size()[2:]))
             inputs = torch.clamp(1 - alpha, 0, 1) * features
+            for layer in d[1:]:
+                inputs = layer(inputs)
 
         return inputs
 

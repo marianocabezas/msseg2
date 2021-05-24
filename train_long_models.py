@@ -360,7 +360,6 @@ def test_net(
 def cross_val(n_folds=5, val_split=0.1, verbose=0):
     # Init
     c = color_codes()
-    d_path = parse_args()['d_path']
 
     positive_cases = [
         '013', '016', '018', '020', '021', '024', '026', '027', '029', '030',
