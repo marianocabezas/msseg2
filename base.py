@@ -777,7 +777,7 @@ class AttentionBlock(BaseModel):
     ):
         super().__init__()
         if activation is None:
-            activation = nn.ReLU
+            activation = partial(lambda filters: nn.ReLU())
         conv = nn.Conv3d
 
         self.conv_q = conv(
