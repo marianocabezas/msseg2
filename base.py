@@ -480,7 +480,7 @@ class DualAttentionAutoencoder(BaseModel):
         self.filters = conv_filters
 
         conv_in, conv_out, deconv_in, deconv_out = block.compute_filters(
-            n_inputs, conv_filters
+            n_inputs // 2, conv_filters
         )
 
         # Down path
