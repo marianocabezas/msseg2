@@ -431,6 +431,115 @@ class BaseModel(nn.Module):
         self.load_state_dict(torch.load(net_name))
 
 
+class DualAttentionAutoencoder(BaseModel):
+    """
+    Main autoencoder class. This class can actually be parameterised on init
+    to have different "main blocks", normalisation layers and activation
+    functions.
+    """
+    def __init__(
+            self,
+            conv_filters,
+            device=torch.device(
+                "cuda:0" if torch.cuda.is_available() else "cpu"
+            ),
+            n_inputs=1,
+            kernel=3,
+            norm=None,
+            activation=None,
+            block=None,
+    ):
+        """
+        Constructor of the class. It's heavily parameterisable to allow for
+        different autoencoder setups (residual blocks, double convolutions,
+        different normalisation and activations).
+        :param conv_filters: Filters for both the encoder and decoder. The
+         decoder mirrors the filters of the encoder.
+        :param device: Device where the model is stored (default is the first
+         cuda device).
+        :param n_inputs: Number of input channels.
+        :param kernel: Kernel width for the main block.
+        :param norm: Normalisation block (it has to be a pointer to a valid
+         normalisation Module).
+        :param activation: Activation block (it has to be a pointer to a valid
+         activation Module).
+        :param block: Main block. It has to be a pointer to a valid block from
+         this python file (otherwise it will fail when trying to create a
+         partial of it).
+        """
+        super().__init__()
+        # Init
+        if norm is None:
+            norm = nn.InstanceNorm3d
+        if block is None:
+            block = ResConv3dBlock
+        block_partial = partial(
+            block, kernel=kernel, norm=norm, activation=activation
+        )
+        self.device = device
+        self.filters = conv_filters
+
+        conv_in, conv_out, deconv_in, deconv_out = block.compute_filters(
+            n_inputs, conv_filters
+        )
+
+        # Down path
+        # We'll use the partial and fill it with the channels for input and
+        # output for each level.
+        self.down = nn.ModuleList([
+            block_partial(f_in, f_out) for f_in, f_out in zip(
+                conv_in, conv_out
+            )
+        ])
+
+        # Bottleneck
+        self.u = block_partial(conv_filters[-2] * 2, conv_filters[-1])
+
+        # Up path
+        # Now we'll do the same we did on the down path, but mirrored. We also
+        # need to account for the skip connections, that's why we sum the
+        # channels for both outputs. That basically means that we are
+        # concatenating with the skip connection, and not suming.
+        self.up = nn.ModuleList([
+            block_partial(f_in, f_out) for f_in, f_out in zip(
+                deconv_in, deconv_out
+            )
+        ])
+
+    def encode(self, input_s, input_t):
+        # We need to keep track of the convolutional outputs, for the skip
+        # connections.
+        down_inputs = []
+        for c in self.down:
+            c.to(self.device)
+            input_s = c(input_s)
+            input_t = c(input_t)
+            down_inputs.append((input_s, input_t))
+            input_s = F.max_pool3d(input_s, 2)
+            input_t = F.max_pool3d(input_t, 2)
+
+        inputs = torch.cat([input_s, input_t], dim=1)
+        self.u.to(self.device)
+        inputs = F.dropout3d(self.u(inputs), self.dropout, self.training)
+
+        return down_inputs, inputs
+
+    def decode(self, inputs, down_inputs):
+        for d, (i_s, i_t) in zip(self.up, down_inputs[::-1]):
+            d.to(self.device)
+            alpha = torch.abs(torch.mean(i_s * i_t, dim=1))
+            features = d(F.interpolate(inputs, size=alpha.size()[2:]))
+            inputs = torch.clamp(1 - alpha, 0, 1) * features
+
+        return inputs
+
+    def forward(self, input_s, input_t):
+        down_inputs, inputs = self.encode(input_s, input_t)
+        output = self.decode(inputs, down_inputs)
+
+        return output
+
+
 class Autoencoder(BaseModel):
     """
     Main autoencoder class. This class can actually be parameterised on init

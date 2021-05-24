@@ -5,7 +5,7 @@ from torch import nn
 import torch.nn.functional as F
 import numpy as np
 from base import BaseModel, ResConv3dBlock
-from base import Autoencoder
+from base import Autoencoder, DualAttentionAutoencoder
 from utils import time_to_string, to_torch_var
 from criteria import gendsc_loss, new_loss
 from criteria import tp_binary_loss, tn_binary_loss, dsc_binary_loss
@@ -228,3 +228,50 @@ class NewLesionsUNet(BaseModel):
         seg /= counts
 
         return seg
+
+
+class NewLesionsAttUNet(NewLesionsUNet):
+    def __init__(
+            self,
+            conv_filters=None,
+            device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+            n_images=3,
+            dropout=0,
+            verbose=0,
+    ):
+        super(NewLesionsAttUNet, self).__init__()
+        self.init = False
+        # Init values
+        if conv_filters is None:
+            self.conv_filters = [32, 64, 128, 256, 512]
+        else:
+            self.conv_filters = conv_filters
+        self.epoch = 0
+        self.t_train = 0
+        self.t_val = 0
+        self.device = device
+        self.dropout = dropout
+
+        # <Parameter setup>
+        self.segmenter = nn.Sequential(
+            DualAttentionAutoencoder(
+                self.conv_filters, device, 2 * n_images, block=ResConv3dBlock,
+                norm=nn.InstanceNorm3d
+            ),
+            nn.Conv3d(self.conv_filters[0], 1, 1)
+        )
+        self.segmenter.to(device)
+
+        # <Optimizer setup>
+        # We do this last step after all parameters are defined
+        model_params = filter(lambda p: p.requires_grad, self.parameters())
+        self.optimizer_alg = torch.optim.Adam(model_params)
+        if verbose > 1:
+            print(
+                'Network created on device {:} with training losses '
+                '[{:}] and validation losses [{:}]'.format(
+                    self.device,
+                    ', '.join([tf['name'] for tf in self.train_functions]),
+                    ', '.join([vf['name'] for vf in self.val_functions])
+                )
+            )

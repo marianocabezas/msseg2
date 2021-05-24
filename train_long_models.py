@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from utils import get_dirs, time_to_string, find_file
 from utils import get_mask, get_normalised_image
 from utils import color_codes
-from models import NewLesionsUNet
+from models import NewLesionsUNet, NewLesionsAttUNet
 from utils import remove_small_regions, get_bb
 from datasets import LongitudinalCroppingDataset, LongitudinalDataset
 
@@ -182,9 +182,9 @@ def train_net(
         # Datasets / Dataloaders should be added here
         if verbose > 1:
             print('Preparing the training datasets / dataloaders')
-        # batch_size = parse_args()['batch_size']
-        # patch_size = parse_args()['patch_size']
-        # overlap = parse_args()['patch_size'] // 2
+        batch_size = parse_args()['batch_size']
+        patch_size = parse_args()['patch_size']
+        overlap = parse_args()['patch_size'] // 2
         num_workers = 16
 
         print('Loading the {:}training{:} data'.format(c['b'], c['nc']))
@@ -198,19 +198,19 @@ def train_net(
 
         if verbose > 1:
             print('Training dataset (with validation)')
-        # train_dataset = LongitudinalCroppingDataset(
-        #     train_source, train_target, train_masks, train_brains,
-        #     patch_size=patch_size, overlap=overlap
-        # )
-        # train_dataloader = DataLoader(
-        #     train_dataset, batch_size, True, num_workers=num_workers
-        # )
-        train_dataset = LongitudinalDataset(
-            train_source, train_target, train_masks, train_brains
+        train_dataset = LongitudinalCroppingDataset(
+            train_source, train_target, train_masks, train_brains,
+            patch_size=patch_size, overlap=overlap
         )
         train_dataloader = DataLoader(
-            train_dataset, 1, True, num_workers=num_workers
+            train_dataset, batch_size, True, num_workers=num_workers
         )
+        # train_dataset = LongitudinalDataset(
+        #     train_source, train_target, train_masks, train_brains
+        # )
+        # train_dataloader = DataLoader(
+        #     train_dataset, 1, True, num_workers=num_workers
+        # )
 
         if verbose > 1:
             print('Validation dataset (with validation)')
@@ -409,7 +409,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             )
         )
         if parse_args()['init_model_dir'] is not None:
-            seg_unet = NewLesionsUNet(device=device, n_images=1)
+            seg_unet = NewLesionsAttUNet(device=device, n_images=1)
         else:
             seg_unet = NewLesionsUNet(
                 device=device, n_images=1, conv_filters=[8, 16, 32, 64, 128, 256]
