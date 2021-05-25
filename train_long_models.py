@@ -214,19 +214,19 @@ def train_net(
 
         if verbose > 1:
             print('Validation dataset (with validation)')
-        # val_dataset = LongitudinalCroppingDataset(
-        #     val_source, val_target, val_masks, val_brains,
-        #     patch_size=patch_size, filtered=False
-        # )
-        # val_dataloader = DataLoader(
-        #     val_dataset, 4 * batch_size, num_workers=num_workers
-        # )
-        val_dataset = LongitudinalDataset(
-            val_source, val_target, val_masks, val_brains
+        val_dataset = LongitudinalCroppingDataset(
+            val_source, val_target, val_masks, val_brains,
+            patch_size=patch_size, filtered=False
         )
         val_dataloader = DataLoader(
-            val_dataset, 1, num_workers=num_workers
+            val_dataset, 4 * batch_size, num_workers=num_workers
         )
+        # val_dataset = LongitudinalDataset(
+        #     val_source, val_target, val_masks, val_brains
+        # )
+        # val_dataloader = DataLoader(
+        #     val_dataset, 1, num_workers=num_workers
+        # )
 
         training_start = time.time()
 
