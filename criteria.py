@@ -134,7 +134,7 @@ def tp_binary_loss(pred, target):
 
     tp_k = intersection / sum_target
     tp_k = tp_k[torch.logical_not(torch.isnan(tp_k))]
-    tp = 1 - torch.mean(tp_k)
+    tp = 1 - torch.mean(tp_k) if len(tp_k) > 0 else torch.tensor(0)
 
     return torch.clamp(tp, 0., 1.)
 
