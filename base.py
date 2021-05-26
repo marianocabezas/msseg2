@@ -501,7 +501,7 @@ class DualAttentionAutoencoder(BaseModel):
         # Attention blocks
         self.att = nn.ModuleList([
             AttentionBlock(
-                f_in, f_in, f_in // 2, norm=norm, activation=activation
+                f_in, f_in, f_in, norm=norm, activation=activation
             )
             for f_in in conv_filters[-2::-1]
         ])
