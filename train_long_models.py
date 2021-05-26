@@ -330,7 +330,7 @@ def test_net(
                 os.path.join(patient_path, 'pr_{:}'.format(filename))
             )
 
-            segmentation = remove_small_regions(seg > 0.5, min_size=3)
+            segmentation = remove_small_regions(seg > 0.5, min_size=4)
             seg_nii = nib.Nifti1Image(
                 segmentation, nii.get_qform(), nii.header
             )
