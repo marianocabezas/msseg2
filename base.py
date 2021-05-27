@@ -798,7 +798,7 @@ class AttentionBlock(BaseModel):
     def forward(self, source, target):
         query = F.instance_norm(self.conv_q(source))
         key = F.instance_norm(self.conv_k(target))
-        value = self.conv_v(target)
+        value = self.conv_v(target - source)
         alpha = torch.abs(
             torch.mean(query * key, dim=1, keepdim=True)
         )
