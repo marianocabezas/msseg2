@@ -243,7 +243,7 @@ class NewLesionsAttUNet(NewLesionsUNet):
         # Init values
         if conv_filters is None:
             # self.conv_filters = [32, 64, 128, 256, 512]
-            self.conv_filters = [16, 32, 64, 128, 256]
+            self.conv_filters = [16, 32, 64, 128, 256, 512]
         else:
             self.conv_filters = conv_filters
         self.epoch = 0

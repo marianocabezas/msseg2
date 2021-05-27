@@ -65,7 +65,7 @@ def parse_args():
     parser.add_argument(
         '-w', '--patch-size',
         dest='patch_size',
-        type=int, default=32,
+        type=int, default=64,
         help='Patch size'
     )
     parser.add_argument(
