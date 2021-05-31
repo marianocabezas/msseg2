@@ -530,7 +530,7 @@ class DualAttentionAutoencoder(BaseModel):
             input_t = F.max_pool3d(input_t, 2)
 
         self.u.to(self.device)
-        inputs = F.dropout3d(self.u(input_s, input_t))
+        inputs = self.u(input_s, input_t)
 
         return down_inputs, inputs
 
