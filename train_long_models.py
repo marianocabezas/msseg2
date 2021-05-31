@@ -435,11 +435,11 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             ]
             train_patients = [
                 p for train_i, idx_i in zip(training_set, val_idx)
-                for p in train_i[val_idx:]
+                for p in train_i[idx_i:]
             ]
             val_patients = [
-                p for train_i in training_set
-                for p in train_i[:val_idx]
+                p for train_i, idx_i in zip(training_set, val_idx)
+                for p in train_i[:idx_i]
             ]
             test_patients = [
                 cases_i[ini_i:end_i]
