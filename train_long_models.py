@@ -445,11 +445,11 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
 
             # > Testing cases
             test_patients = [
-                cases_i[ini_i:end_i]
-                for cases_i, ini_i, end_i in zip(
+                p for cases_i, ini_i, end_i in zip(
                     cases_dict.values(),
                     ini_idx, end_idx
                 )
+                for p in cases_i[ini_i:end_i]
             ]
 
         print(
