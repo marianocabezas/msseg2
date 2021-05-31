@@ -474,7 +474,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                 c['nc']
             )
         )
-        # test_net(seg_unet, train_patients, train=True, verbose=verbose)
+
         test_net(seg_unet, test_patients, verbose=verbose)
 
 
