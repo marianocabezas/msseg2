@@ -384,10 +384,9 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                     c['clr'] + c['c'], c['g'], i + 1, n_folds, c['nc']
                 )
             )
-        # > Training cases
-        # We will avoid "negative" samples during training.
-        # Indices
         if parse_args()['init_model_dir'] is not None:
+            # > Training cases
+            # Indices
             ini_pos = len(positive_cases) * i // n_folds
             end_pos = len(positive_cases) * (i + 1) // n_folds
             ini_neg = len(negative_cases) * i // n_folds
@@ -414,6 +413,8 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                     cases_dict[key] = []
                     cases_dict[key].append(p)
 
+            # > Training cases
+            # Indices
             ini_idx = [
                 len(cases_i) * i // n_folds
                 for cases_i in cases_dict.values()
@@ -441,6 +442,8 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                 p for train_i, idx_i in zip(training_set, val_idx)
                 for p in train_i[:idx_i]
             ]
+
+            # > Testing cases
             test_patients = [
                 cases_i[ini_i:end_i]
                 for cases_i, ini_i, end_i in zip(
