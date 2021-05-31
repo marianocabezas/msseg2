@@ -8,7 +8,7 @@ from nibabel import load as load_nii
 from utils import color_codes
 from utils import get_mask, get_normalised_image
 from utils import time_to_string, find_file
-from models import NewLesionsUNet
+from models import NewLesionsUNet, NewLesionsAttUNet
 from utils import remove_small_regions, get_dirs
 
 """
@@ -67,7 +67,8 @@ def test(n_folds=5, verbose=0):
     t_path = options['test_dir']
     model_path = options['model_dir']
 
-    net = NewLesionsUNet(n_images=1)
+    # net = NewLesionsUNet(n_images=1)
+    net = NewLesionsAttUNet(n_images=1)
     n_params = sum(
         p.numel() for p in net.parameters() if p.requires_grad
     )
@@ -76,7 +77,7 @@ def test(n_folds=5, verbose=0):
     brain_name = 'brain_mask.nii.gz'
     bl_name = 'flair_time01_on_middle_space_n4.nii.gz'
     fu_name = 'flair_time02_on_middle_space_n4.nii.gz'
-    activity_name = 'positive_activity.nii.gz'
+    activity_name = 'positive_activity_init.nii.gz'
 
     patients = sorted(get_dirs(t_path))
 
