@@ -289,7 +289,7 @@ def test_net(
                 time_to_string(test_elapsed),
                 time_to_string(test_eta),
             ),
-            # end='\r'
+            end='\r'
         )
         patient_path = os.path.join(d_path, p)
 
