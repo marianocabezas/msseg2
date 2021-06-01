@@ -304,7 +304,7 @@ def test_net(
             fu = get_normalised_image(pfu_name, brain_bin)
 
             # Brain mask
-            bb = get_bb(brain_bin, 2)
+            # bb = get_bb(brain_bin, 2)
 
             # seg_bb = net.new_lesions(
             #     np.expand_dims(bl[bb], axis=0), np.expand_dims(fu[bb], axis=0)
@@ -314,13 +314,15 @@ def test_net(
             #         np.expand_dims(bl, axis=0), np.expand_dims(fu, axis=0)
             #     )
             # except RuntimeError:
-            seg = np.zeros(brain_bin.shape)
-            seg_bb = net.new_lesions_patch(
-                np.expand_dims(bl[bb], axis=0),
-                np.expand_dims(fu[bb], axis=0),
+            # seg = np.zeros(brain_bin.shape)
+            seg = net.new_lesions_patch(
+                # np.expand_dims(bl[bb], axis=0),
+                # np.expand_dims(fu[bb], axis=0),
+                np.expand_dims(bl, axis=0),
+                np.expand_dims(fu, axis=0),
                 64, 16, i, len(patients), test_start
             )
-            seg[bb] = seg_bb
+            # seg[bb] = seg_bb
 
             seg[np.logical_not(brain_bin)] = 0
             seg_nii = nib.Nifti1Image(
