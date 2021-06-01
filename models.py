@@ -27,10 +27,10 @@ def print_batch(pi, n_patches, i, n_cases, t_in, t_case_in):
 
     t_eta = (t_case_out / (pi + 1)) * (n_patches - (pi + 1))
     eta_s = time_to_string(t_eta)
-    pre_s = '{:}Case {:03d}/{:03d} ({:03d}/{:03d}) [{:}{:}]' \
+    pre_s = '{:}Case {:03d}/{:03d} ({:03d}/{:03d} - {:06.2f}%) [{:}{:}]' \
             ' {:} ETA: {:}'
     batch_s = pre_s.format(
-        init_c, i + 1, n_cases, pi + 1, n_patches,
+        init_c, i + 1, n_cases, pi + 1, n_patches, 100 * (pi + 1) / n_patches,
         progress_s, remainder_s, time_s, eta_s + '\033[0m'
     )
     print('\033[K', end='', flush=True)
