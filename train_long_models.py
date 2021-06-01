@@ -320,7 +320,7 @@ def test_net(
                 # np.expand_dims(fu[bb], axis=0),
                 np.expand_dims(bl, axis=0),
                 np.expand_dims(fu, axis=0),
-                32, 128, i, len(patients), test_start
+                32, 256, i, len(patients), test_start
             )
             # seg[bb] = seg_bb
 
