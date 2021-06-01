@@ -16,10 +16,10 @@ def norm_f(n_f):
 
 
 def print_batch(pi, n_patches, i, n_cases, t_in, t_case_in):
-    init_c = '\033[38;5;238m'
-    percent = 20 * (pi + 1) // n_patches
-    progress_s = ''.join(['-'] * percent)
-    remainder_s = ''.join([' '] * (20 - percent))
+    init_c = '\033[0m'
+    percent = 25 * (i + 1) // n_patches
+    progress_s = ''.join(['█'] * percent)
+    remainder_s = ''.join([' '] * (25 - percent))
 
     t_out = time.time() - t_in
     t_case_out = time.time() - t_case_in
