@@ -150,16 +150,16 @@ def train_net(
     if patience is None:
         patience = parse_args()['patience']
 
-    n_params = sum(
-        p.numel() for p in net.parameters() if p.requires_grad
-    )
-
     initial_model = parse_args()['init_model_dir']
     if initial_model is not None:
         initial_weights = os.path.join(initial_model, model_name)
         net.load_model(initial_weights)
         if parse_args()['freeze_ae']:
             net.segmenter[0].freeze()
+
+    n_params = sum(
+        p.numel() for p in net.parameters() if p.requires_grad
+    )
 
     model_path = parse_args()['model_dir']
     if not os.path.exists(model_path):
