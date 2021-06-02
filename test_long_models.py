@@ -66,6 +66,8 @@ def test(n_folds=5, verbose=0):
     options = parse_inputs()
     t_path = options['test_dir']
     model_path = options['model_dir']
+    batch_size = options['batch_size']
+    patch_size = options['patch_size']
 
     # net = NewLesionsUNet(n_images=1)
     net = NewLesionsAttUNet(n_images=1)
@@ -120,6 +122,15 @@ def test(n_folds=5, verbose=0):
         ref_nii = load_nii(pbrain_name)
         segmentation = np.zeros_like(ref_nii.get_fdata())
 
+        brain_bin = brain.astype(np.bool)
+        idx = np.where(brain_bin)
+        bb = tuple(
+            slice(min_i, max_i)
+            for min_i, max_i in zip(
+                np.min(idx, axis=-1), np.max(idx, axis=-1)
+            )
+        )
+
         for fi in range(n_folds):
             net_name = 'positive-unet_n{:d}.pt'.format(fi)
             net.load_model(os.path.join(model_path, net_name))
@@ -132,16 +143,6 @@ def test(n_folds=5, verbose=0):
                     ), end='\r'
                 )
 
-            batch_size = options['batch_size']
-            patch_size = options['patch_size']
-            brain_bin = brain.astype(np.bool)
-            idx = np.where(brain_bin)
-            bb = tuple(
-                slice(min_i, max_i)
-                for min_i, max_i in zip(
-                    np.min(idx, axis=-1), np.max(idx, axis=-1)
-                )
-            )
             seg = np.zeros(brain.shape)
             t_source = bl[(slice(None),) + bb]
             t_target = fu[(slice(None),) + bb]
