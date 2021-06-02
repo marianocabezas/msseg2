@@ -155,7 +155,9 @@ def train_net(
         initial_weights = os.path.join(initial_model, model_name)
         net.load_model(initial_weights)
         if parse_args()['freeze_ae']:
-            net.ae.freeze()
+            net.ae.u.freeze()
+            net.ae.up.freeze()
+            net.ae.att.freeze()
 
     n_params = sum(
         p.numel() for p in net.parameters() if p.requires_grad
