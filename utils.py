@@ -274,6 +274,28 @@ def remove_small_regions(img_vol, min_size=3):
     return nu_mask
 
 
+def remove_boundary_regions(img_vol, roi, thickness=1):
+    """
+        Function that removes blobs with a size smaller than a minimum from a
+        mask volume.
+        :param img_vol: Mask volume. It should be a numpy array of type bool.
+        :param roi: Region of interest mask. It should be a numpy array of type
+         bool.
+        :param thickness: Thickness of the boundary ribbon.
+        :return: New mask without the small blobs.
+    """
+
+    small_roi = imerode(roi, iterations=thickness)
+    boundary = np.logical_and(roi, np.logical_not(small_roi))
+    blobs, _ = nd.measurements.label(
+        img_vol,
+        nd.morphology.generate_binary_structure(3, 3)
+    )
+    boundary_labels = list(filter(bool, np.unique(blobs[boundary])))
+    nu_mask = np.isin(blobs, boundary_labels, invert=True)
+    return nu_mask
+
+
 def to_torch_var(
         np_array,
         device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),

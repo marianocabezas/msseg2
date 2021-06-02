@@ -9,7 +9,7 @@ from utils import color_codes
 from utils import get_mask, get_normalised_image
 from utils import time_to_string, find_file
 from models import NewLesionsUNet, NewLesionsAttUNet
-from utils import remove_small_regions, get_dirs
+from utils import remove_small_regions, remove_boundary_regions, get_dirs
 
 """
 > Arguments
@@ -159,10 +159,11 @@ def test(n_folds=5, verbose=0):
 
         pactivity_name = os.path.join(patient_path, activity_name)
         # Thresholding + brain mask filtering
-        final_activity = remove_small_regions(
+        small_activity = remove_small_regions(
             np.logical_and(segmentation > 0.5, brain.astype(np.bool)),
-            min_size=2
+            min_size=3
         )
+        final_activity = remove_boundary_regions(small_activity, brain_bin)
 
         # Final mask
         segmentation_nii = nib.Nifti1Image(
