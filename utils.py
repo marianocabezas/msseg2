@@ -291,7 +291,7 @@ def remove_boundary_regions(img_vol, roi, thickness=1):
         img_vol,
         nd.morphology.generate_binary_structure(3, 3)
     )
-    boundary_labels = list(filter(bool, np.unique(blobs[boundary])))
+    boundary_labels = list(np.unique(blobs[boundary]))
     nu_mask = np.isin(blobs, boundary_labels, invert=True)
     return nu_mask
 
