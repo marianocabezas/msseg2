@@ -146,7 +146,8 @@ def test(n_folds=5, verbose=0):
             t_source = bl[(slice(None),) + bb]
             t_target = fu[(slice(None),) + bb]
             seg_bb = net.new_lesions_patch(
-                t_source, t_target, patch_size, batch_size
+                t_source, t_target, patch_size, batch_size,
+                i, len(patients), global_start
             )
             seg[bb] = seg_bb
 
@@ -176,7 +177,7 @@ def test(n_folds=5, verbose=0):
         print(
             '{:}Patient {:} finished{:} (total time {:})'.format(
                 c['r'], patient, c['nc'], time_str
-            )
+            ), end='\r'
         )
 
     time_str = time.strftime(
