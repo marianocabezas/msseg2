@@ -71,11 +71,11 @@ class NewLesionsUNet(BaseModel):
 
         # <Loss function setup>
         self.train_functions = [
-            {
-                'name': 'dsc',
-                'weight': 1,
-                'f': lambda p, t: gendsc_loss(p, t, w_bg=0, w_fg=1)
-            },
+            # {
+            #     'name': 'dsc',
+            #     'weight': 1,
+            #     'f': lambda p, t: gendsc_loss(p, t, w_bg=0, w_fg=1)
+            # },
             {
                 'name': 'xentropy',
                 'weight': 1,
