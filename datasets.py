@@ -216,7 +216,7 @@ class LongitudinalDataset(Dataset):
 
 class LongitudinalImageCroppingDataset(Dataset):
     def __init__(
-            self, source, target, masks, patch_size=32,
+            self, source, target, activity, masks, patch_size=32,
             overlap=0
     ):
         # Init
@@ -232,6 +232,7 @@ class LongitudinalImageCroppingDataset(Dataset):
         self.source = source
         self.target = target
         self.masks = masks
+        self.labels = activity
 
         # We get the preliminary patch slices (inside the bounding box)...
         slices = get_slices(self.masks, self.patch_size, self.overlap)
