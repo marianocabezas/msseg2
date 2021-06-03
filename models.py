@@ -350,8 +350,8 @@ class LongitudinalEncoder(BaseModel):
             )
 
     def forward(self, source, target):
-        source_out, source_feat = self.ae(source)
-        target_out, target_feat = self.ae(target)
+        source_out, source_feat = self.ae(source, keepfeat=True)
+        target_out, target_feat = self.ae(target, keepfeat=True)
 
         source_out = self.final_source(source_out)
         target_out = self.final_source(target_out)
