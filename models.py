@@ -248,7 +248,7 @@ class NewLesionsAttUNet(NewLesionsUNet):
 
         # <Parameter setup>
         self.ae = DualAttentionAutoencoder(
-            self.conv_filters, device, 2 * n_images, block=ResConv3dBlock,
+            self.conv_filters, device, n_images, block=ResConv3dBlock,
             norm=norm_f
         )
         self.ae.to(device)
@@ -303,11 +303,11 @@ class LongitudinalEncoder(BaseModel):
         )
         self.ae.to(device)
         self.final_source = ResConv3dBlock(
-            self.conv_filters[0], 1, 1, norm_f, nn.Identity
+            self.conv_filters[0], 1, 1, nn.Identity, nn.Identity
         )
         self.final_source.to(device)
         self.final_target = ResConv3dBlock(
-            self.conv_filters[0], 1, 1, norm_f, nn.Identity
+            self.conv_filters[0], 1, 1, nn.Identity, nn.Identity
         )
         self.final_target.to(device)
 
