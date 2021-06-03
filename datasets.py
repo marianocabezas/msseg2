@@ -217,7 +217,7 @@ class LongitudinalDataset(Dataset):
 class LongitudinalImageCroppingDataset(Dataset):
     def __init__(
             self, source, target, activity, masks, patch_size=32,
-            overlap=0
+            overlap=0, *args, **kwargs
     ):
         # Init
         if type(patch_size) is not tuple:
