@@ -302,10 +302,14 @@ class LongitudinalEncoder(BaseModel):
             norm=norm_f
         )
         self.ae.to(device)
-        self.final = ResConv3dBlock(
+        self.final_source = ResConv3dBlock(
             self.conv_filters[0], 1, 1, norm_f, nn.Identity
         )
-        self.final.to(device)
+        self.final_source.to(device)
+        self.final_target = ResConv3dBlock(
+            self.conv_filters[0], 1, 1, norm_f, nn.Identity
+        )
+        self.final_target.to(device)
 
         # <Loss function setup>
         self.train_functions = [
@@ -346,6 +350,12 @@ class LongitudinalEncoder(BaseModel):
             )
 
     def forward(self, source, target):
-        data = torch.cat([source, target], dim=1)
+        source_out, source_feat = self.ae(source)
+        target_out, target_feat = self.ae(target)
 
-        return torch.sigmoid(self.segmenter(data))
+        source_out = self.final_source(source_out)
+        target_out = self.final_source(target_out)
+
+        feat = list(zip(source_feat, target_feat))
+
+        return source_out, target_out, feat
