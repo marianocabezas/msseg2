@@ -140,7 +140,9 @@ def train_net(
         epochs = parse_args()['epochs']
     if patience is None:
         patience = parse_args()['patience']
-
+    if dataset != LongitudinalCroppingDataset:
+        epochs = epochs // 2
+        patience = patience // 2
     n_params = sum(
         p.numel() for p in net.parameters() if p.requires_grad
     )
