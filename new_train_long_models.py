@@ -167,6 +167,8 @@ def train_net(
         if verbose > 1:
             print('Preparing the training datasets / dataloaders')
         batch_size = parse_args()['batch_size']
+        if dataset != LongitudinalCroppingDataset:
+            batch_size = batch_size * 4
         patch_size = parse_args()['patch_size']
         overlap = parse_args()['patch_size'] // 2
         num_workers = 16
