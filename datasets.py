@@ -239,10 +239,10 @@ class LongitudinalImageCroppingDataset(Dataset):
             image[none_slice + bb] for image, bb in zip(target, bbs)
         ]
         self.masks = [
-            mask[none_slice + bb] for mask, bb in zip(masks, bbs)
+            mask[bb] for mask, bb in zip(masks, bbs)
         ]
         self.labels = [
-            mask[none_slice + bb] for mask, bb in zip(activity, bbs)
+            mask[bb] for mask, bb in zip(activity, bbs)
         ]
 
         # We get the preliminary patch slices (inside the bounding box)...
