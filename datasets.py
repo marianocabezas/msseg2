@@ -212,3 +212,68 @@ class LongitudinalDataset(Dataset):
 
     def __len__(self):
         return len(self.labels) * 2
+
+
+class LongitudinalImageCroppingDataset(Dataset):
+    def __init__(
+            self, source, target, masks, patch_size=32,
+            overlap=0
+    ):
+        # Init
+        if type(patch_size) is not tuple:
+            self.patch_size = (patch_size,) * 3
+        else:
+            self.patch_size = patch_size
+        if type(overlap) is not tuple:
+            self.overlap = (overlap,) * 3
+        else:
+            self.overlap = overlap
+
+        self.source = source
+        self.target = target
+        self.masks = masks
+
+        # We get the preliminary patch slices (inside the bounding box)...
+        slices = get_slices(self.masks, self.patch_size, self.overlap)
+
+        # ... however, being inside the bounding box doesn't guarantee that the
+        # patch itself will contain any lesion voxels. Since, the lesion class
+        # is extremely underrepresented, we will filter this preliminary slices
+        # to guarantee that we only keep the ones that contain at least one
+        # lesion voxel.
+        self.patch_slices = [
+            (s, i) for i, s_i in enumerate(slices) for s in s_i
+        ]
+
+    def __getitem__(self, index):
+        flip = index >= len(self.patch_slices)
+        if flip:
+            index -= len(self.patch_slices)
+        slice_i, case_idx = self.patch_slices[index]
+
+        source = self.source[case_idx]
+        target = self.target[case_idx]
+        none_slice = (slice(None, None),)
+        # Patch "extraction".
+        data = (
+            source[none_slice + slice_i].astype(np.float32),
+            target[none_slice + slice_i].astype(np.float32),
+        )
+        target_data = (
+            source[none_slice + slice_i].astype(np.float32),
+            target[none_slice + slice_i].astype(np.float32),
+        )
+        if flip:
+            data = (
+                np.fliplr(data[0]).copy(),
+                np.fliplr(data[1]).copy(),
+            )
+            target_data = (
+                np.fliplr(data[0]).copy(),
+                np.fliplr(data[1]).copy(),
+            )
+
+        return data, target_data
+
+    def __len__(self):
+        return len(self.patch_slices) * 2

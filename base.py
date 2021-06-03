@@ -568,12 +568,10 @@ class Autoencoder(BaseModel):
             ),
             n_inputs=1,
             kernel=3,
-            pooling=False,
             norm=None,
             activation=None,
             block=None,
-            gated=False,
-            dropout=0,
+            gated=False
     ):
         """
         Constructor of the class. It's heavily parameterisable to allow for
@@ -585,7 +583,6 @@ class Autoencoder(BaseModel):
          cuda device).
         :param n_inputs: Number of input channels.
         :param kernel: Kernel width for the main block.
-        :param pooling: Whether to use pooling or not.
         :param norm: Normalisation block (it has to be a pointer to a valid
          normalisation Module).
         :param activation: Activation block (it has to be a pointer to a valid
@@ -604,9 +601,7 @@ class Autoencoder(BaseModel):
         block_partial = partial(
             block, kernel=kernel, norm=norm, activation=activation
         )
-        self.pooling = pooling
         self.device = device
-        self.dropout = dropout
         self.filters = conv_filters
 
         conv_in, conv_out, deconv_in, deconv_out = block.compute_filters(
@@ -663,16 +658,13 @@ class Autoencoder(BaseModel):
         down_inputs = []
         for c in self.down:
             c.to(self.device)
-            input_s = F.dropout3d(
-                c(input_s), self.dropout, self.training
-            )
+            input_s = c(input_s)
             down_inputs.append(input_s)
             # Remember that pooling is optional
-            if self.pooling:
-                input_s = F.max_pool3d(input_s, 2)
+            input_s = F.max_pool3d(input_s, 2)
 
         self.u.to(self.device)
-        input_s = F.dropout3d(self.u(input_s), self.dropout, self.training)
+        input_s = self.u(input_s)
 
         return down_inputs, input_s
 
@@ -680,23 +672,12 @@ class Autoencoder(BaseModel):
         for d, i in zip(self.up, down_inputs[::-1]):
             d.to(self.device)
             # Remember that pooling is optional
-            if self.pooling:
-                input_s = F.dropout3d(
-                    d(
-                        torch.cat(
-                            (F.interpolate(input_s, size=i.size()[2:]), i),
-                            dim=1
-                        )
-                    ),
-                    self.dropout,
-                    self.training
+            input_s = d(
+                torch.cat(
+                    (F.interpolate(input_s, size=i.size()[2:]), i),
+                    dim=1
                 )
-            else:
-                input_s = F.dropout3d(
-                    d(torch.cat((input_s, i), dim=1)),
-                    self.dropout,
-                    self.training
-                )
+            )
 
         return input_s
 

@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from utils import get_dirs, time_to_string, find_file
 from utils import get_mask, get_normalised_image
 from utils import color_codes
-from models import NewLesionsAttUNet
+from models import NewLesionsAttUNet, LongitudinalEncoder
 from utils import remove_small_regions
 from datasets import LongitudinalCroppingDataset
 from datasets import LongitudinalImageCroppingDataset
@@ -24,7 +24,7 @@ def parse_args():
     )
     parser.add_argument(
         '-d', '--data-path',
-        dest='d_path', default='/data',
+        dest='d_path', default=None,
         help='Option to use the old pipeline in the production docker. '
              'The second parameter should be the folder where '
              'the patients are stored.'
@@ -33,11 +33,6 @@ def parse_args():
         '-m', '--model-directory',
         dest='model_dir', default='./ModelWeightsFinal',
         help='Path to the final model weights.'
-    )
-    parser.add_argument(
-        '-M', '--initial-model-directory',
-        dest='init_model_dir', default=None,
-        help='Path to the initial model weights (fine-tuning).'
     )
     parser.add_argument(
         '-e', '--epochs',
@@ -68,11 +63,6 @@ def parse_args():
         dest='patch_size',
         type=int, default=64,
         help='Patch size'
-    )
-    parser.add_argument(
-        '-f', '--freeze-ae',
-        dest='freeze_ae', default=False, action='store_true',
-        help='Option to freeze the autoencoder.'
     )
     return vars(parser.parse_args())
 
@@ -124,44 +114,32 @@ def get_data(
 
 
 def train_net(
-        net, model_name, train_patients, val_patients, epochs=None,
-        patience=None, verbose=1
+        d_path, net, model_name, train_patients, val_patients, epochs=None,
+        patience=None, dataset=LongitudinalCroppingDataset, verbose=1
 ):
     """
         Function that applies a CNN-based registration approach. The goal of
         this network is to find the atrophy deformation, and how it affects the
         lesion mask, manually segmented on the baseline image.
+        :param d_path:
         :param net:
         :param model_name:
         :param train_patients:
         :param val_patients:
         :param epochs:
         :param patience:
+        :param dataset:
         :param verbose: Verbosity level.
         :return: None.
         """
 
-    c = color_codes()
-
     # Init
-    d_path = parse_args()['d_path']
+    c = color_codes()
 
     if epochs is None:
         epochs = parse_args()['epochs']
     if patience is None:
         patience = parse_args()['patience']
-
-    initial_model = parse_args()['init_model_dir']
-    if initial_model is not None:
-        initial_weights = os.path.join(initial_model, model_name)
-        net.load_model(initial_weights)
-        if parse_args()['freeze_ae']:
-            for param in net.ae.u.parameters():
-                param.requires_grad = False
-            for param in net.ae.up.parameters():
-                param.requires_grad = False
-            for param in net.ae.att.parameters():
-                param.requires_grad = False
 
     n_params = sum(
         p.numel() for p in net.parameters() if p.requires_grad
@@ -204,35 +182,23 @@ def train_net(
 
         if verbose > 1:
             print('Training dataset (with validation)')
-        train_dataset = LongitudinalCroppingDataset(
+        train_dataset = dataset(
             train_source, train_target, train_masks, train_brains,
             patch_size=patch_size, overlap=overlap
         )
         train_dataloader = DataLoader(
             train_dataset, batch_size, True, num_workers=num_workers
         )
-        # train_dataset = LongitudinalDataset(
-        #     train_source, train_target, train_masks, train_brains
-        # )
-        # train_dataloader = DataLoader(
-        #     train_dataset, 1, True, num_workers=num_workers
-        # )
 
         if verbose > 1:
             print('Validation dataset (with validation)')
-        val_dataset = LongitudinalCroppingDataset(
+        val_dataset = dataset(
             val_source, val_target, val_masks, val_brains,
             patch_size=patch_size, filtered=False
         )
         val_dataloader = DataLoader(
             val_dataset, 4 * batch_size, num_workers=num_workers
         )
-        # val_dataset = LongitudinalDataset(
-        #     val_source, val_target, val_masks, val_brains
-        # )
-        # val_dataloader = DataLoader(
-        #     val_dataset, 1, num_workers=num_workers
-        # )
 
         training_start = time.time()
 
@@ -258,30 +224,20 @@ def train_net(
 
 
 def test_net(
-    net, patients,
+    d_path, net, patients,
     brain_name='brain_mask.nii.gz',
     bl_name='flair_time01_on_middle_space_n4.nii.gz',
     fu_name='flair_time02_on_middle_space_n4.nii.gz',
-    train=False,
     verbose=1
 ):
     # Init
     c = color_codes()
-    d_path = parse_args()['d_path']
     seg_list = list()
 
-    initial_model = parse_args()['init_model_dir']
-    fine_tuning = parse_args()['freeze_ae']
-    if initial_model is not None:
-        if fine_tuning:
-            filename = 'positive_activity_ft-freeze.nii.gz'
-        else:
-            filename = 'positive_activity_ft.nii.gz'
+    if parse_args()['d_path'] is None:
+        filename = 'positive_activity_prexval.nii.gz'
     else:
-        filename = 'positive_activity_xval.nii.gz'
-
-    if train:
-        filename = 'train_' + filename
+        filename = 'positive_activity_preinit.nii.gz'
 
     test_start = time.time()
     tests = len(patients)
@@ -368,7 +324,7 @@ def test_net(
 def cross_val(n_folds=5, val_split=0.1, verbose=0):
     # Init
     c = color_codes()
-
+    d_path = '/data/MSReports/Longitudinal/MICCAI_Challenge2021/training/'
     positive_cases = [
         '013', '016', '018', '020', '021', '024', '026', '027', '029', '030',
         '032', '035', '037', '039', '043', '047', '048', '057', '061', '069',
@@ -392,7 +348,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                     c['clr'] + c['c'], c['g'], i + 1, n_folds, c['nc']
                 )
             )
-        if parse_args()['init_model_dir'] is not None:
+        if parse_args()['d_path'] is None:
             # > Training cases
             # Indices
             ini_pos = len(positive_cases) * i // n_folds
@@ -467,12 +423,24 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             )
         )
 
-        seg_unet = NewLesionsAttUNet(device=device, n_images=1)
+        pretrain_net = LongitudinalEncoder(device=device, n_images=1)
+        model_name = 'encoder-net_n{:d}.pt'.format(
+            i, epochs, patience
+        )
+        train_net(
+            d_path, pretrain_net, model_name, train_patients, val_patients,
+            dataset=LongitudinalImageCroppingDataset, verbose=verbose
+        )
+
+        seg_net = NewLesionsAttUNet(device=device, n_images=1)
+        seg_net.ae.up = pretrain_net.ae.up
+        for param in seg_net.ae.up.parameters():
+            param.requires_grad = False
         model_name = 'positive-unet_n{:d}.pt'.format(
             i, epochs, patience
         )
         train_net(
-            seg_unet, model_name, train_patients, val_patients,
+            d_path, seg_net, model_name, train_patients, val_patients,
             verbose=verbose
         )
 
@@ -483,7 +451,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             )
         )
 
-        test_net(seg_unet, test_patients, verbose=verbose)
+        test_net(seg_net, test_patients, verbose=verbose)
 
 
 def main():

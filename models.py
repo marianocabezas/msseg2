@@ -7,7 +7,7 @@ import numpy as np
 from base import BaseModel, ResConv3dBlock
 from base import Autoencoder, DualAttentionAutoencoder
 from utils import time_to_string, to_torch_var
-from criteria import gendsc_loss, new_loss
+from criteria import gendsc_loss, new_loss, similarity_loss
 from criteria import tp_binary_loss, tn_binary_loss, dsc_binary_loss
 
 
@@ -63,7 +63,7 @@ class NewLesionsUNet(BaseModel):
         self.segmenter = nn.Sequential(
             Autoencoder(
                 self.conv_filters, device, 2 * n_images, block=ResConv3dBlock,
-                pooling=True, norm=norm_f
+                norm=norm_f
             ),
             nn.Conv3d(self.conv_filters[0], 1, 1)
         )
@@ -76,11 +76,6 @@ class NewLesionsUNet(BaseModel):
                 'weight': 1,
                 'f': lambda p, t: gendsc_loss(p, t, w_bg=0, w_fg=1)
             },
-            # {
-            #     'name': 'new',
-            #     'weight': 1,
-            #     'f': lambda p, t: new_loss(p, t)
-            # },
             {
                 'name': 'xentropy',
                 'weight': 1,
@@ -242,7 +237,6 @@ class NewLesionsAttUNet(NewLesionsUNet):
         self.init = False
         # Init values
         if conv_filters is None:
-            # self.conv_filters = [32, 64, 128, 256, 512]
             self.conv_filters = [16, 32, 64, 128, 256, 512]
         else:
             self.conv_filters = conv_filters
@@ -278,3 +272,80 @@ class NewLesionsAttUNet(NewLesionsUNet):
     def forward(self, source, target):
         features = self.ae(source, target)
         return torch.sigmoid(self.segmenter(features))
+
+
+class LongitudinalEncoder(BaseModel):
+    def __init__(
+            self,
+            conv_filters=None,
+            device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+            n_images=1,
+            dropout=0,
+            verbose=0,
+    ):
+        super(LongitudinalEncoder, self).__init__()
+        self.init = False
+        # Init values
+        if conv_filters is None:
+            self.conv_filters = [16, 32, 64, 128, 256, 512]
+        else:
+            self.conv_filters = conv_filters
+        self.epoch = 0
+        self.t_train = 0
+        self.t_val = 0
+        self.device = device
+        self.dropout = dropout
+
+        # <Parameter setup>
+        self.ae = Autoencoder(
+            self.conv_filters, device, n_images, block=ResConv3dBlock,
+            norm=norm_f
+        )
+        self.ae.to(device)
+        self.final = ResConv3dBlock(
+            self.conv_filters[0], 1, 1, norm_f, nn.Identity
+        )
+        self.final.to(device)
+
+        # <Loss function setup>
+        self.train_functions = [
+            {
+                'name': 'bl',
+                'weight': 1,
+                'f': lambda p, t: F.mse_loss(
+                    p[0], t[0],
+                )
+            },
+            {
+                'name': 'fu',
+                'weight': 1,
+                'f': lambda p, t: F.mse_loss(
+                    p[1], t[1],
+                )
+            },
+            {
+                'name': 'sim',
+                'weight': 1,
+                'f': lambda p, t: similarity_loss(p[2])
+            },
+        ]
+        self.val_functions = self.train_functions
+
+        # <Optimizer setup>
+        # We do this last step after all parameters are defined
+        model_params = filter(lambda p: p.requires_grad, self.parameters())
+        self.optimizer_alg = torch.optim.Adam(model_params)
+        if verbose > 1:
+            print(
+                'Network created on device {:} with training losses '
+                '[{:}] and validation losses [{:}]'.format(
+                    self.device,
+                    ', '.join([tf['name'] for tf in self.train_functions]),
+                    ', '.join([vf['name'] for vf in self.val_functions])
+                )
+            )
+
+    def forward(self, source, target):
+        data = torch.cat([source, target], dim=1)
+
+        return torch.sigmoid(self.segmenter(data))

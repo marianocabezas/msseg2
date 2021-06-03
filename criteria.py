@@ -1,4 +1,16 @@
 import torch
+from torch.nn import functional as F
+
+
+"""
+Similarity losses
+"""
+
+
+def similarity_loss(var_pair):
+    mse_losses = [F.mse_loss(xi, yi) for xi, yi in var_pair]
+
+    return sum(mse_losses)
 
 
 """
