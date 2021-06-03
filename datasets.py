@@ -229,10 +229,21 @@ class LongitudinalImageCroppingDataset(Dataset):
         else:
             self.overlap = overlap
 
-        self.source = source
-        self.target = target
-        self.masks = masks
-        self.labels = activity
+        bbs = [get_bb(mask, 2) for mask in masks]
+        none_slice = (slice(None, None),)
+
+        self.source = [
+            image[none_slice + bb] for image, bb in zip(source, bbs)
+        ]
+        self.target = [
+            image[none_slice + bb] for image, bb in zip(target, bbs)
+        ]
+        self.masks = [
+            mask[none_slice + bb] for mask, bb in zip(masks, bbs)
+        ]
+        self.labels = [
+            mask[none_slice + bb] for mask, bb in zip(activity, bbs)
+        ]
 
         # We get the preliminary patch slices (inside the bounding box)...
         slices = get_slices(self.masks, self.patch_size, self.overlap)
