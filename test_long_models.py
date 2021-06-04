@@ -79,8 +79,8 @@ def test(n_folds=5, verbose=0):
     brain_name = 'brain_mask.nii.gz'
     bl_name = 'flair_time01_on_middle_space_n4.nii.gz'
     fu_name = 'flair_time02_on_middle_space_n4.nii.gz'
-    activity_name = 'positive_activity_init.nii.gz'
-
+    # activity_name = 'positive_activity_init.nii.gz'
+    activity_name = 'positive_activity_preinit.nii.gz'
     patients = sorted(get_dirs(t_path))
 
     # Preprocessing
