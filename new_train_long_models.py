@@ -455,7 +455,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             )
         )
 
-        test_net(seg_net, test_patients, verbose=verbose)
+        test_net(d_path, seg_net, test_patients, verbose=verbose)
 
 
 def main():
