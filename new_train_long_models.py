@@ -331,6 +331,7 @@ def private_train(val_split=0.1, verbose=0):
 
     d_path = '/data/MSReports/Longitudinal/MICCAI_Challenge2021/private/'
     cases = get_dirs(d_path)
+    print(cases)
     cases_dict = {}
     for p in cases:
         key = p.split('_')[0]
