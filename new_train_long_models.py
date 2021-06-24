@@ -346,11 +346,11 @@ def private_train(val_split=0.1, verbose=0):
         for train_i in cases_dict.values()
     ]
     train_patients = [
-        p for train_i, idx_i in zip(cases_dict, val_idx)
+        p for train_i, idx_i in zip(cases_dict.values(), val_idx)
         for p in train_i[idx_i:]
     ]
     val_patients = [
-        p for train_i, idx_i in zip(cases_dict, val_idx)
+        p for train_i, idx_i in zip(cases_dict.values(), val_idx)
         for p in train_i[:idx_i]
     ]
 
