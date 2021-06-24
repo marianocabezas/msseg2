@@ -334,7 +334,6 @@ def private_train(val_split=0.1, verbose=0):
     cases_dict = {}
     for p in cases:
         key = p.split('_')[0]
-        print(key)
         try:
             cases_dict[key].append(p)
         except KeyError:
@@ -344,7 +343,7 @@ def private_train(val_split=0.1, verbose=0):
     # > Training cases
     val_idx = [
         max(1, int(val_split * len(train_i)))
-        for train_i in cases_dict
+        for train_i in cases_dict.values()
     ]
     train_patients = [
         p for train_i, idx_i in zip(cases_dict, val_idx)
