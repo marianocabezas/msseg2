@@ -238,10 +238,7 @@ def test_net(
     c = color_codes()
     seg_list = list()
 
-    if parse_args()['d_path'] is None:
-        filename = 'positive_activity_prexval.nii.gz'
-    else:
-        filename = 'positive_activity_preinit.nii.gz'
+    filename = 'positive_activity_final.nii.gz'
 
     test_start = time.time()
     tests = len(patients)
@@ -325,6 +322,62 @@ def test_net(
 """
 
 
+def private_train(val_split=0.1, verbose=0):
+    # Init
+    c = color_codes()
+    gpu = parse_args()['gpu_id']
+    cuda = torch.cuda.is_available()
+    device = torch.device('cuda:%d' % gpu if cuda else 'cpu')
+
+    d_path = '/data/MSReports/Longitudinal/MICCAI_Challenge2021/private/'
+    cases = get_dirs(d_path)
+    cases_dict = {}
+    for p in cases:
+        key = p.split('_')[0]
+        try:
+            cases_dict[key].append(p)
+        except KeyError:
+            cases_dict[key] = []
+            cases_dict[key].append(p)
+
+    # > Training cases
+    val_idx = [
+        max(1, int(val_split * len(train_i)))
+        for train_i in cases_dict
+    ]
+    train_patients = [
+        p for train_i, idx_i in zip(cases_dict, val_idx)
+        for p in train_i[idx_i:]
+    ]
+    val_patients = [
+        p for train_i, idx_i in zip(cases_dict, val_idx)
+        for p in train_i[:idx_i]
+    ]
+
+    pretrain_net = LongitudinalEncoder(device=device, n_images=1)
+
+    print(
+        '{:}[{:}]{:} Positive activity {:}Unet {:}(private){:}'.format(
+            c['c'], time.strftime("%H:%M:%S"), c['g'], c['nc'] + c['b'],
+            c['y'], c['nc']
+        )
+    )
+
+    train_net(
+        d_path, pretrain_net, 'encoder-net.pt', train_patients, val_patients,
+        dataset=LongitudinalImageCroppingDataset, verbose=verbose
+    )
+
+    seg_net = NewLesionsAttUNet(device=device, n_images=1)
+    seg_net.ae.up = pretrain_net.ae.up
+    for param in seg_net.ae.up.parameters():
+        param.requires_grad = False
+    train_net(
+        d_path, seg_net, 'positive-unet.pt', train_patients, val_patients,
+        verbose=verbose
+    )
+
+
 def cross_val(n_folds=5, val_split=0.1, verbose=0):
     # Init
     c = color_codes()
@@ -339,8 +392,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
         '096'
     ]
 
-    patience = parse_args()['patience']
-    epochs = parse_args()['epochs']
+    model_path = parse_args()['model_dir']
     gpu = parse_args()['gpu_id']
     cuda = torch.cuda.is_available()
     device = torch.device('cuda:%d' % gpu if cuda else 'cpu')
@@ -352,73 +404,22 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
                     c['clr'] + c['c'], c['g'], i + 1, n_folds, c['nc']
                 )
             )
-        if parse_args()['d_path'] is None:
-            # > Training cases
-            # Indices
-            ini_pos = len(positive_cases) * i // n_folds
-            end_pos = len(positive_cases) * (i + 1) // n_folds
-            ini_neg = len(negative_cases) * i // n_folds
-            end_neg = len(negative_cases) * (i + 1) // n_folds
-            training_set = positive_cases[end_pos:] + positive_cases[:ini_pos]
+        # > Training cases
+        # Indices
+        ini_pos = len(positive_cases) * i // n_folds
+        end_pos = len(positive_cases) * (i + 1) // n_folds
+        ini_neg = len(negative_cases) * i // n_folds
+        end_neg = len(negative_cases) * (i + 1) // n_folds
+        training_set = positive_cases[end_pos:] + positive_cases[:ini_pos]
 
-            val_idx = max(1, int(val_split * len(training_set)))
-            train_patients = training_set[val_idx:]
-            val_patients = training_set[:val_idx]
+        val_idx = max(1, int(val_split * len(training_set)))
+        train_patients = training_set[val_idx:]
+        val_patients = training_set[:val_idx]
 
-            # > Testing cases
-            test_pos = positive_cases[ini_pos:end_pos]
-            test_neg = negative_cases[ini_neg:end_neg]
-            test_patients = test_pos + test_neg
-        else:
-            d_path = parse_args()['d_path']
-            cases = get_dirs(d_path)
-            cases_dict = {}
-            for p in cases:
-                key = p.split('_')[0]
-                try:
-                    cases_dict[key].append(p)
-                except KeyError:
-                    cases_dict[key] = []
-                    cases_dict[key].append(p)
-
-            # > Training cases
-            # Indices
-            ini_idx = [
-                len(cases_i) * i // n_folds
-                for cases_i in cases_dict.values()
-            ]
-            end_idx = [
-                len(cases_i) * (i + 1) // n_folds
-                for cases_i in cases_dict.values()
-            ]
-            training_set = [
-                cases_i[end_i:] + cases_i[:ini_i]
-                for cases_i, ini_i, end_i in zip(
-                    cases_dict.values(),
-                    ini_idx, end_idx
-                )
-            ]
-            val_idx = [
-                max(1, int(val_split * len(train_i)))
-                for train_i in training_set
-            ]
-            train_patients = [
-                p for train_i, idx_i in zip(training_set, val_idx)
-                for p in train_i[idx_i:]
-            ]
-            val_patients = [
-                p for train_i, idx_i in zip(training_set, val_idx)
-                for p in train_i[:idx_i]
-            ]
-
-            # > Testing cases
-            test_patients = [
-                p for cases_i, ini_i, end_i in zip(
-                    cases_dict.values(),
-                    ini_idx, end_idx
-                )
-                for p in cases_i[ini_i:end_i]
-            ]
+        # > Testing cases
+        test_pos = positive_cases[ini_pos:end_pos]
+        test_neg = negative_cases[ini_neg:end_neg]
+        test_patients = test_pos + test_neg
 
         print(
             '{:}[{:}]{:} Positive activity {:}Unet {:}(attention){:}'.format(
@@ -427,22 +428,11 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
             )
         )
 
-        pretrain_net = LongitudinalEncoder(device=device, n_images=1)
-        model_name = 'encoder-net_n{:d}.pt'.format(
-            i, epochs, patience
-        )
-        train_net(
-            d_path, pretrain_net, model_name, train_patients, val_patients,
-            dataset=LongitudinalImageCroppingDataset, verbose=verbose
-        )
-
         seg_net = NewLesionsAttUNet(device=device, n_images=1)
-        seg_net.ae.up = pretrain_net.ae.up
+        seg_net.load_model(os.path.join(model_path, 'positive-unet.pt'))
         for param in seg_net.ae.up.parameters():
             param.requires_grad = False
-        model_name = 'positive-unet_n{:d}.pt'.format(
-            i, epochs, patience
-        )
+        model_name = 'positive-unet_n{:d}.pt'.format(i)
         train_net(
             d_path, seg_net, model_name, train_patients, val_patients,
             verbose=verbose
@@ -459,6 +449,7 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
 
 
 def main():
+    private_train(verbose=2)
     cross_val(verbose=2)
 
 

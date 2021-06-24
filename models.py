@@ -255,6 +255,17 @@ class NewLesionsAttUNet(NewLesionsUNet):
         self.segmenter = nn.Conv3d(self.conv_filters[0], 1, 1)
         self.segmenter.to(device)
 
+        # <Loss function setup>
+        self.train_functions = [
+            {
+                'name': 'wxent',
+                'weight': 1,
+                'f': lambda p, t: new_loss(
+                    p, t.type_as(p).to(p.device),
+                )
+            }
+        ]
+
         # <Optimizer setup>
         # We do this last step after all parameters are defined
         model_params = filter(lambda p: p.requires_grad, self.parameters())
