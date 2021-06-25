@@ -257,10 +257,17 @@ class NewLesionsAttUNet(NewLesionsUNet):
 
         # <Loss function setup>
         self.train_functions = [
+            # {
+            #     'name': 'wxent',
+            #     'weight': 1,
+            #     'f': lambda p, t: new_loss(
+            #         p, t.type_as(p).to(p.device),
+            #     )
+            # }
             {
-                'name': 'wxent',
+                'name': 'xent',
                 'weight': 1,
-                'f': lambda p, t: new_loss(
+                'f': lambda p, t: F.cross_entropy(
                     p, t.type_as(p).to(p.device),
                 )
             }

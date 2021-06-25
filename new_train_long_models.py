@@ -213,16 +213,16 @@ def train_net(
         num_workers = 16
 
         print(
-            'Loading the {:}training{:} data ({:03d} subjects)'.format(
-                c['b'], c['nc'], len(train_patients)
+            '{:}Loading the {:}training{:} data ({:03d} subjects)'.format(
+                c['clr'], c['b'], c['nc'], len(train_patients)
             )
         )
         train_source, train_target, train_masks, train_brains = get_data(
             train_patients, d_path
         )
         print(
-            'Loading the {:}validation{:} data ({:03d} subjects)'.format(
-                c['b'], c['nc'], len(val_patients)
+            '{:}Loading the {:}validation{:} data ({:03d} subjects)'.format(
+                c['clr'], c['b'], c['nc'], len(val_patients)
             )
         )
         val_source, val_target, val_masks, val_brains = get_data(
@@ -230,7 +230,7 @@ def train_net(
         )
 
         if verbose > 1:
-            print('Training dataset (with validation)')
+            print('{:}Training dataset (with validation)'.format(c['clr']))
         train_dataset = dataset(
             train_source, train_target, train_masks, train_brains,
             patch_size=patch_size, overlap=overlap
@@ -240,7 +240,7 @@ def train_net(
         )
 
         if verbose > 1:
-            print('Validation dataset (with validation)')
+            print('{:}Validation dataset (with validation)'.format(c['clr']))
         val_dataset = dataset(
             val_source, val_target, val_masks, val_brains,
             patch_size=patch_size, filtered=False
@@ -479,8 +479,8 @@ def cross_val(n_folds=5, val_split=0.1, verbose=0):
 
         seg_net = NewLesionsAttUNet(device=device, n_images=1)
         seg_net.load_model(os.path.join(model_path, 'positive-unet.pt'))
-        for param in seg_net.ae.up.parameters():
-            param.requires_grad = False
+        # for param in seg_net.ae.down.parameters():
+        #     param.requires_grad = False
         model_name = 'positive-unet_n{:d}.pt'.format(i)
         train_net(
             d_path, seg_net, model_name, train_patients, val_patients,
