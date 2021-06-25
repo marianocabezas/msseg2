@@ -82,23 +82,27 @@ def get_data(
 ):
     if d_path is None:
         d_path = parse_args()['dataset_path']
+    print('Loading brain masks')
     patient_paths = [os.path.join(d_path, patient) for patient in patients]
     brain_names = [
         os.path.join(p_path, brain_name) for p_path in patient_paths
     ]
     brains = list(map(get_mask, brain_names))
 
+    print('Loading activity masks')
     positive_names = [
         os.path.join(p_path, positive_name) for p_path in patient_paths
     ]
     positive = list(map(get_mask, positive_names))
 
+    print('Loading baseline images')
     norm_bl = [
         np.expand_dims(
             get_normalised_image(os.path.join(p, bl_name), mask_i), axis=0
         ) for p, mask_i in zip(patient_paths, brains)
     ]
 
+    print('Loading followup images')
     norm_fu = [
         np.expand_dims(
             get_normalised_image(os.path.join(p, fu_name), mask_i), axis=0
@@ -175,11 +179,19 @@ def train_net(
         overlap = parse_args()['patch_size'] // 2
         num_workers = 16
 
-        print('Loading the {:}training{:} data'.format(c['b'], c['nc']))
+        print(
+            'Loading the {:}training{:} data ({:03d} subjects)'.format(
+                c['b'], c['nc'], len(train_patients)
+            )
+        )
         train_source, train_target, train_masks, train_brains = get_data(
             train_patients, d_path
         )
-        print('Loading the {:}validation{:} data'.format(c['b'], c['nc']))
+        print(
+            'Loading the {:}validation{:} data ({:03d} subjects)'.format(
+                c['b'], c['nc'], len(val_patients)
+            )
+        )
         val_source, val_target, val_masks, val_brains = get_data(
             val_patients, d_path
         )
@@ -370,8 +382,8 @@ def private_train(val_split=0.1, verbose=0):
 
     seg_net = NewLesionsAttUNet(device=device, n_images=1)
     seg_net.ae.up = pretrain_net.ae.up
-    for param in seg_net.ae.up.parameters():
-        param.requires_grad = False
+    # for param in seg_net.ae.up.parameters():
+    #     param.requires_grad = False
     train_net(
         d_path, seg_net, 'positive-unet.pt', train_patients, val_patients,
         verbose=verbose
