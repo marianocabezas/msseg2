@@ -125,7 +125,7 @@ def get_data(
         print(
             '{:}Loading follow-up image [{:}] ({:03d}/{:03d})'.format(
                 c['clr'], patient, i + 1, len(patients)
-            )
+            ), end='\r'
         )
         norm_fu.append(
             np.expand_dims(
@@ -134,7 +134,7 @@ def get_data(
                     brain
                 ),
                 axis=0
-            ), end='\r'
+            )
         )
 
     return norm_bl, norm_fu, positive, brains
@@ -410,6 +410,10 @@ def private_train(val_split=0.1, verbose=0):
 
     seg_net = NewLesionsAttUNet(device=device, n_images=1)
     seg_net.ae.up = pretrain_net.ae.up
+    model_params = filter(
+        lambda param: param.requires_grad, seg_net.parameters()
+    )
+    seg_net.optimizer_alg = torch.optim.Adam(model_params)
     # for param in seg_net.ae.up.parameters():
     #     param.requires_grad = False
     train_net(
