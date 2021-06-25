@@ -120,7 +120,7 @@ def get_data(
             np.expand_dims(
                 get_normalised_image(
                     os.path.join(patient_path, bl_name),
-                    brain
+                    brain, dtype=np.float16
                 ),
                 axis=0
             )
@@ -136,7 +136,7 @@ def get_data(
             np.expand_dims(
                 get_normalised_image(
                     os.path.join(patient_path, fu_name),
-                    brain
+                    brain, dtype=np.float16
                 ),
                 axis=0
             )
