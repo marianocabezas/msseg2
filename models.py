@@ -289,7 +289,9 @@ class NewLesionsAttUNet(NewLesionsUNet):
 
     def forward(self, source, target):
         features = self.ae(source, target)
-        return torch.sigmoid(self.segmenter(features))
+        segmentation = torch.sigmoid(self.segmenter(features))
+        print(segmentation.shape)
+        return segmentation
 
 
 class LongitudinalEncoder(BaseModel):
