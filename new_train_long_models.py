@@ -83,15 +83,16 @@ def get_data(
     if d_path is None:
         d_path = parse_args()['dataset_path']
 
+    c = color_codes()
     brains = []
     norm_bl = []
     norm_fu = []
     positive = []
     for i, patient in enumerate(patients):
         print(
-            'Loading brain mask [{:}] ({:03d}/{:03d})'.format(
-                patient, i + 1, len(patients)
-            )
+            '{:}Loading brain mask [{:}] ({:03d}/{:03d})'.format(
+                c['clr'], patient, i + 1, len(patients)
+            ), end='\r'
         )
         patient_path = os.path.join(d_path, patient)
         pbrain_name = os.path.join(patient_path, brain_name)
@@ -99,17 +100,17 @@ def get_data(
         brains.append(brain)
 
         print(
-            'Loading activity mask [{:}] ({:03d}/{:03d})'.format(
-                patient, i + 1, len(patients)
-            )
+            '{:}Loading activity mask [{:}] ({:03d}/{:03d})'.format(
+                c['clr'], patient, i + 1, len(patients)
+            ), end='\r'
         )
         ppositive_name = os.path.join(patient_path, positive_name)
         positive = get_mask(ppositive_name)
 
         print(
-            'Loading baseline image [{:}] ({:03d}/{:03d})'.format(
-                patient, i + 1, len(patients)
-            )
+            '{:}Loading baseline image [{:}] ({:03d}/{:03d})'.format(
+                c['clr'], patient, i + 1, len(patients)
+            ), end='\r'
         )
         norm_bl.append(
             np.expand_dims(
@@ -118,12 +119,12 @@ def get_data(
                     brain
                 ),
                 axis=0
-            )
+            ), end='\r'
         )
 
         print(
-            'Loading follow-up image [{:}] ({:03d}/{:03d})'.format(
-                patient, i + 1, len(patients)
+            '{:}Loading follow-up image [{:}] ({:03d}/{:03d})'.format(
+                c['clr'], patient, i + 1, len(patients)
             )
         )
         norm_fu.append(
