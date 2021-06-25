@@ -119,7 +119,7 @@ def get_data(
                     brain
                 ),
                 axis=0
-            ), end='\r'
+            )
         )
 
         print(
@@ -134,7 +134,7 @@ def get_data(
                     brain
                 ),
                 axis=0
-            )
+            ), end='\r'
         )
 
     return norm_bl, norm_fu, positive, brains
