@@ -88,10 +88,12 @@ def get_data(
     norm_bl = []
     norm_fu = []
     positive = []
+    load_start = time.time()
     for i, patient in enumerate(patients):
+        time_s = time_to_string(time.time() - load_start)
         print(
-            '{:}Loading brain mask [{:}] ({:03d}/{:03d})'.format(
-                c['clr'], patient, i + 1, len(patients)
+            '{:}Loading brain mask [{:}] ({:03d}/{:03d}) {:}'.format(
+                c['clr'], patient, i + 1, len(patients), time_s
             ), end='\r'
         )
         patient_path = os.path.join(d_path, patient)
@@ -99,17 +101,19 @@ def get_data(
         brain = get_mask(pbrain_name)
         brains.append(brain)
 
+        time_s = time_to_string(time.time() - load_start)
         print(
-            '{:}Loading activity mask [{:}] ({:03d}/{:03d})'.format(
-                c['clr'], patient, i + 1, len(patients)
+            '{:}Loading activity mask [{:}] ({:03d}/{:03d}) {:}'.format(
+                c['clr'], patient, i + 1, len(patients), time_s
             ), end='\r'
         )
         ppositive_name = os.path.join(patient_path, positive_name)
         positive = get_mask(ppositive_name)
 
+        time_s = time_to_string(time.time() - load_start)
         print(
-            '{:}Loading baseline image [{:}] ({:03d}/{:03d})'.format(
-                c['clr'], patient, i + 1, len(patients)
+            '{:}Loading baseline image [{:}] ({:03d}/{:03d}) {:}'.format(
+                c['clr'], patient, i + 1, len(patients), time_s
             ), end='\r'
         )
         norm_bl.append(
@@ -122,9 +126,10 @@ def get_data(
             )
         )
 
+        time_s = time_to_string(time.time() - load_start)
         print(
-            '{:}Loading follow-up image [{:}] ({:03d}/{:03d})'.format(
-                c['clr'], patient, i + 1, len(patients)
+            '{:}Loading follow-up image [{:}] ({:03d}/{:03d}) {:}'.format(
+                c['clr'], patient, i + 1, len(patients), time_s
             ), end='\r'
         )
         norm_fu.append(
