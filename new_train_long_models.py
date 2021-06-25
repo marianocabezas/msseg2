@@ -82,32 +82,59 @@ def get_data(
 ):
     if d_path is None:
         d_path = parse_args()['dataset_path']
-    print('Loading brain masks')
-    patient_paths = [os.path.join(d_path, patient) for patient in patients]
-    brain_names = [
-        os.path.join(p_path, brain_name) for p_path in patient_paths
-    ]
-    brains = list(map(get_mask, brain_names))
 
-    print('Loading activity masks')
-    positive_names = [
-        os.path.join(p_path, positive_name) for p_path in patient_paths
-    ]
-    positive = list(map(get_mask, positive_names))
+    brains = []
+    norm_bl = []
+    norm_fu = []
+    positive = []
+    for i, patient in enumerate(patients):
+        print(
+            'Loading brain mask [{:}] ({:03d}/{:03d})'.format(
+                patient, i + 1, len(patients)
+            )
+        )
+        patient_path = os.path.join(d_path, patient)
+        pbrain_name = os.path.join(patient_path, brain_name)
+        brain = get_mask(pbrain_name)
+        brains.append(brain)
 
-    print('Loading baseline images')
-    norm_bl = [
-        np.expand_dims(
-            get_normalised_image(os.path.join(p, bl_name), mask_i), axis=0
-        ) for p, mask_i in zip(patient_paths, brains)
-    ]
+        print(
+            'Loading activity mask [{:}] ({:03d}/{:03d})'.format(
+                patient, i + 1, len(patients)
+            )
+        )
+        ppositive_name = os.path.join(patient_path, positive_name)
+        positive = get_mask(ppositive_name)
 
-    print('Loading followup images')
-    norm_fu = [
-        np.expand_dims(
-            get_normalised_image(os.path.join(p, fu_name), mask_i), axis=0
-        ) for p, mask_i in zip(patient_paths, brains)
-    ]
+        print(
+            'Loading baseline image [{:}] ({:03d}/{:03d})'.format(
+                patient, i + 1, len(patients)
+            )
+        )
+        norm_bl.append(
+            np.expand_dims(
+                get_normalised_image(
+                    os.path.join(patient_path, bl_name),
+                    brain
+                ),
+                axis=0
+            )
+        )
+
+        print(
+            'Loading follow-up image [{:}] ({:03d}/{:03d})'.format(
+                patient, i + 1, len(patients)
+            )
+        )
+        norm_fu.append(
+            np.expand_dims(
+                get_normalised_image(
+                    os.path.join(patient_path, fu_name),
+                    brain
+                ),
+                axis=0
+            )
+        )
 
     return norm_bl, norm_fu, positive, brains
 
