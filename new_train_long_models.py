@@ -108,7 +108,7 @@ def get_data(
             ), end='\r'
         )
         ppositive_name = os.path.join(patient_path, positive_name)
-        positive = get_mask(ppositive_name)
+        positive.append(get_mask(ppositive_name))
 
         time_s = time_to_string(time.time() - load_start)
         print(
@@ -414,12 +414,12 @@ def private_train(val_split=0.1, verbose=0):
     )
 
     seg_net = NewLesionsAttUNet(device=device, n_images=1)
-    seg_net.ae.up = pretrain_net.ae.up
+    seg_net.ae.down = pretrain_net.ae.down
     model_params = filter(
         lambda param: param.requires_grad, seg_net.parameters()
     )
     seg_net.optimizer_alg = torch.optim.Adam(model_params)
-    # for param in seg_net.ae.up.parameters():
+    # for param in seg_net.ae.down.parameters():
     #     param.requires_grad = False
     train_net(
         d_path, seg_net, 'positive-unet.pt', train_patients, val_patients,
