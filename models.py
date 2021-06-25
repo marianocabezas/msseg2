@@ -267,7 +267,7 @@ class NewLesionsAttUNet(NewLesionsUNet):
             {
                 'name': 'xent',
                 'weight': 1,
-                'f': lambda p, t: F.cross_entropy(
+                'f': lambda p, t: F.binary_cross_entropy(
                     p, t.type_as(p).to(p.device),
                 )
             }
@@ -290,7 +290,6 @@ class NewLesionsAttUNet(NewLesionsUNet):
     def forward(self, source, target):
         features = self.ae(source, target)
         segmentation = torch.sigmoid(self.segmenter(features))
-        print(segmentation.shape)
         return segmentation
 
 
