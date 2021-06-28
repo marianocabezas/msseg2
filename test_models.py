@@ -29,6 +29,11 @@ def parse_inputs():
         description='Run the longitudinal MS lesion segmentation pipelines.'
     )
     parser.add_argument(
+        '-m', '--model-directory',
+        dest='model_dir', default='/model',
+        help='Path to the model.'
+    )
+    parser.add_argument(
         '-t', '--test-directory',
         dest='test_dir', default='/workspace',
         help='Option to use leave-one-out. The second parameter is the '
@@ -90,7 +95,7 @@ def test(n_folds=5, verbose=0):
     c = color_codes()
     options = parse_inputs()
     t_path = options['test_dir']
-    model_path = './ModelWeights'
+    model_path = options['model_dir']
     tmp_path = '/tmp'
     batch_size = 512
     patch_size = 32
