@@ -95,17 +95,12 @@ def test(n_folds=5, verbose=0):
     batch_size = 512
     patch_size = 32
 
-    net = NewLesionsAttUNet(n_images=1)
-    n_params = sum(
-        p.numel() for p in net.parameters() if p.requires_grad
-    )
-    print('Unet parameters {:d}'.format(n_params))
-
     brain_name = 'brain_mask.nii.gz'
     bl_name = options['t1_name']
     fu_name = options['t2_name']
     activity_name = options['out_name']
 
+    global_start = time.time()
     # Preprocessing
     time_str = time.strftime("%H:%M:%S")
     print(
@@ -151,6 +146,11 @@ def test(n_folds=5, verbose=0):
         '{:}[{:}]{:} Testing the image{:}'.format(
             c['c'], time_str, c['g'], c['nc'])
     )
+    net = NewLesionsAttUNet(n_images=1)
+    n_params = sum(
+        p.numel() for p in net.parameters() if p.requires_grad
+    )
+    print('Unet parameters {:d}'.format(n_params))
 
     case_start = time.time()
 
@@ -216,9 +216,11 @@ def test(n_folds=5, verbose=0):
 
     time_str = time.strftime(
         '%H hours %M minutes %S seconds',
-        time.gmtime(time.time() - case_start)
+        time.gmtime(time.time() - global_start)
     )
-    print('Segmentation finished (total time {:})'.format(time_str))
+    print(
+        '{:}Segmentation finished (total time {:})'.format(c['clr'], time_str)
+    )
 
 
 """
