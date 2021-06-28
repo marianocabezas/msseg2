@@ -24,7 +24,7 @@ def parse_args():
     )
     parser.add_argument(
         '-d', '--data-path',
-        dest='d_path', default=None,
+        dest='d_path', default='/in',
         help='Option to use the old pipeline in the production docker. '
              'The second parameter should be the folder where '
              'the patients are stored.'
@@ -281,7 +281,6 @@ def test_net(
 ):
     # Init
     c = color_codes()
-    seg_list = list()
 
     filename = 'positive_activity_final.nii.gz'
 
@@ -346,8 +345,6 @@ def test_net(
             )
             seg_nii.to_filename(seg_name)
 
-            seg_list.append(segmentation)
-
     if verbose > 0:
         time_str = time.strftime(
             '%H hours %M minutes %S seconds',
@@ -358,8 +355,6 @@ def test_net(
                 c['clr'] + c['r'], c['nc'], time_str
             )
         )
-
-    return seg_list
 
 
 """
