@@ -7,7 +7,7 @@ import numpy as np
 from base import BaseModel, ResConv3dBlock
 from base import Autoencoder, DualAttentionAutoencoder
 from utils import time_to_string, to_torch_var
-from criteria import gendsc_loss, new_loss, similarity_loss
+from criteria import gendsc_loss, similarity_loss
 from criteria import tp_binary_loss, tn_binary_loss, dsc_binary_loss
 
 

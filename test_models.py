@@ -11,9 +11,9 @@ from scipy.ndimage.morphology import binary_closing
 from scipy.ndimage.morphology import binary_erosion
 from scipy.ndimage.morphology import binary_dilation
 from scipy.ndimage.morphology import binary_fill_holes
-from utils import color_codes, get_mask, get_normalised_image, find_file
-from models import NewLesionsAttUNet
+from utils import color_codes, get_normalised_image, find_file
 from utils import remove_small_regions, remove_boundary_regions
+from models import NewLesionsAttUNet
 
 
 """
@@ -30,7 +30,7 @@ def parse_inputs():
     )
     parser.add_argument(
         '-t', '--test-directory',
-        dest='test_dir', default='/data',
+        dest='test_dir', default='/workspace',
         help='Option to use leave-one-out. The second parameter is the '
              'folder with all the patients.'
     )
@@ -114,12 +114,12 @@ def test(n_folds=5, verbose=0):
     )
 
     bl_raw = os.path.join(t_path, bl_name)
-    bl_final = os.path.join(tmp_path)
+    bl_final = os.path.join(tmp_path, 'time1_corrected.nii.gz')
     print('- Correcting FLAIR [time 1]', end='\r')
     itkn4(bl_raw, bl_final)
 
     fu_raw = os.path.join(t_path, fu_name)
-    fu_final = os.path.join(tmp_path)
+    fu_final = os.path.join(tmp_path, 'time2_corrected.nii.gz')
     print('- Correcting FLAIR [time 2]', end='\r')
     itkn4(fu_raw, fu_final)
 
