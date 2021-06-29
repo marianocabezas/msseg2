@@ -159,18 +159,15 @@ def test(n_folds=5, verbose=0):
 
     case_start = time.time()
 
-    pbrain_name = find_file(brain_name, t_path)
-    pbl_name = find_file(bl_name, t_path)
-    pfu_name = find_file(fu_name, t_path)
     bl = np.expand_dims(
-        get_normalised_image(pbl_name, final_brain, dtype=np.float16), axis=0
+        get_normalised_image(bl_final, final_brain, dtype=np.float16), axis=0
     )
     fu = np.expand_dims(
-        get_normalised_image(pfu_name, final_brain, dtype=np.float16), axis=0
+        get_normalised_image(fu_final, final_brain, dtype=np.float16), axis=0
     )
 
-    ref_nii = nib.load(pbrain_name)
-    segmentation = np.zeros_like(ref_nii.get_fdata())
+    ref_nii = nib.load(fu_final)
+    segmentation = np.zeros_like(brain)
 
     brain_bin = final_brain.astype(np.bool)
     idx = np.where(brain_bin)
@@ -200,7 +197,7 @@ def test(n_folds=5, verbose=0):
         )
         seg[bb] = seg_bb
 
-        seg_temp = np.zeros_like(ref_nii.get_fdata())
+        seg_temp = np.zeros_like(brain)
         seg_temp[bb] = seg_bb
         seg_temp[np.logical_not(brain_bin)] = 0
 
@@ -214,9 +211,7 @@ def test(n_folds=5, verbose=0):
     final_activity = remove_boundary_regions(small_activity, brain_bin)
 
     # Final mask
-    segmentation_nii = nib.Nifti1Image(
-        final_activity, ref_nii.get_qform(), ref_nii.header
-    )
+    segmentation_nii = nib.Nifti1Image(final_activity, ref_nii.get_qform())
     segmentation_nii.to_filename(pactivity_name)
 
     time_str = time.strftime(

@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/pytorch:20.02-py3
+FROM pytorch/pytorch:1.7.1-cuda11.0-cudnn8-runtime
 
 MAINTAINER Mariano Cabezas <mariano.cabezas@sydney.edu.au>
 
