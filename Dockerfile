@@ -1,4 +1,4 @@
-FROM gcr.io/deeplearning-platform-release/pytorch-cpu
+FROM nvcr.io/nvidia/pytorch:20.02-py3
 
 MAINTAINER Mariano Cabezas <mariano.cabezas@sydney.edu.au>
 
@@ -14,5 +14,5 @@ RUN pip install -r /src/requirements.txt && rm /workspace -rf && mkdir /workspac
 
 WORKDIR /workspace
 
-ENTRYPOINT ["python", "/src/inference.py"]
+ENTRYPOINT ["/bin/sh", "-c", "python", "/src/inference.py"]
 
