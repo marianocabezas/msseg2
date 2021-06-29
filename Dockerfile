@@ -13,6 +13,3 @@ COPY ModelWeights /model
 RUN pip install -r /src/requirements.txt && rm /workspace -rf && mkdir /workspace
 
 WORKDIR /workspace
-
-ENTRYPOINT ["/bin/sh", "-c"]
-
