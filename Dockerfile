@@ -14,5 +14,5 @@ RUN pip install -r /src/requirements.txt && rm /workspace -rf && mkdir /workspac
 
 WORKDIR /workspace
 
-ENTRYPOINT ["/bin/sh", "-c", "python", "/src/inference.py"]
+ENTRYPOINT ["/bin/sh", "-c"]
 
