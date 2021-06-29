@@ -8,7 +8,12 @@
     "container-image": {
         "image": "mcabezas/msseg_snac:gpu",
         "index": "hub.docker.com",
-        "type": "docker"
+        "type": "docker",
+        "container-opts": [
+            "--gpus",
+            "all"
+        ]
+
     },
     "inputs": [
         {
