@@ -159,12 +159,8 @@ def test(n_folds=5, verbose=0):
 
     case_start = time.time()
 
-    bl = np.expand_dims(
-        get_normalised_image(bl_final, final_brain, dtype=np.float16), axis=0
-    )
-    fu = np.expand_dims(
-        get_normalised_image(fu_final, final_brain, dtype=np.float16), axis=0
-    )
+    bl = np.expand_dims(get_normalised_image(bl_final, final_brain), axis=0)
+    fu = np.expand_dims(get_normalised_image(fu_final, final_brain), axis=0)
 
     ref_nii = nib.load(fu_final)
     segmentation = np.zeros_like(brain).astype(np.float32)
