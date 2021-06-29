@@ -6,7 +6,7 @@
     "schema-version": "0.5",
     "command-line": "python /src/inference.py -t1 [FLAIR1] -t2 [FLAIR2] -o [SEGMENTATION]",
     "container-image": {
-        "image": "mcabezas/msseg_snac:cpu",
+        "image": "mcabezas/msseg_snac:cpu_1.0.0",
         "index": "hub.docker.com",
         "type": "docker"
     },
