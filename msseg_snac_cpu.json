@@ -40,5 +40,5 @@
             "optional": false,
             "path-template": "[SEGMENTATION]"
         }
-    ],
+    ]
 }
