@@ -28,6 +28,7 @@ class BaseModel(nn.Module):
         """
         super().__init__()
         # Init values
+        self.device = None
         self.init = True
         self.optimizer_alg = None
         self.epoch = 0
@@ -428,7 +429,9 @@ class BaseModel(nn.Module):
         torch.save(self.state_dict(), net_name)
 
     def load_model(self, net_name):
-        self.load_state_dict(torch.load(net_name))
+        self.load_state_dict(
+            torch.load(net_name, map_location=self.device)
+        )
 
 
 class DualAttentionAutoencoder(BaseModel):
