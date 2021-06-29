@@ -167,7 +167,7 @@ def test(n_folds=5, verbose=0):
     )
 
     ref_nii = nib.load(fu_final)
-    segmentation = np.zeros_like(brain)
+    segmentation = np.zeros_like(brain).astype(np.float32)
 
     brain_bin = final_brain.astype(np.bool)
     idx = np.where(brain_bin)
@@ -197,7 +197,7 @@ def test(n_folds=5, verbose=0):
         )
         seg[bb] = seg_bb
 
-        seg_temp = np.zeros_like(brain)
+        seg_temp = np.zeros_like(brain).astype(np.float32)
         seg_temp[bb] = seg_bb
         seg_temp[np.logical_not(brain_bin)] = 0
 
