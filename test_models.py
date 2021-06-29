@@ -207,7 +207,10 @@ def test(n_folds=5, verbose=0):
     final_activity = remove_boundary_regions(small_activity, brain_bin)
 
     # Final mask
-    segmentation_nii = nib.Nifti1Image(final_activity, ref_nii.get_qform())
+    segmentation_nii = nib.Nifti1Image(
+        final_activity.astype(np.uint8),
+        ref_nii.get_qform()
+    )
     segmentation_nii.to_filename(pactivity_name)
 
     time_str = time.strftime(
