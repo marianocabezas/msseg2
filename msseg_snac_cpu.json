@@ -1,0 +1,44 @@
+{
+    "name": "MSSeg_SNAC_Method_GPU",
+    "description": "Detect new MS lesions from two FLAIR images using a CNN and attention.",
+    "author": "Mariano Cabezas",
+    "tool-version": "v0.1.0",
+    "schema-version": "0.5",
+    "command-line": "python /src/inference.py -t1 [FLAIR1] -t2 [FLAIR2] -o [SEGMENTATION]",
+    "container-image": {
+        "image": "mcabezas/msseg_snac:cpu",
+        "index": "hub.docker.com",
+        "type": "docker"
+    },
+    "inputs": [
+        {
+            "id": "flair_time01",
+            "name": "The first flair image (e.g. flair_time01.nii.gz)",
+            "optional": false,
+            "type": "File",
+            "value-key": "[FLAIR1]"
+        },
+        {
+            "id": "flair_time02",
+            "name": "The second flair image (e.g. flair_time02.nii.gz)",
+            "optional": false,
+            "type": "File",
+            "value-key": "[FLAIR2]"
+        },
+        {
+            "id": "output_segmentation",
+            "name": "The output segmentation (e.g. segmentation.nii.gz)",
+            "optional": false,
+            "type": "String",
+            "value-key": "[SEGMENTATION]"
+        }
+    ],
+    "output-files": [
+        {
+            "id": "segmentation",
+            "name": "The segmentation output",
+            "optional": false,
+            "path-template": "[SEGMENTATION]"
+        }
+    ],
+}
