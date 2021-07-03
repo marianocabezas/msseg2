@@ -30,7 +30,7 @@ def parse_inputs():
     )
     parser.add_argument(
         '-m', '--model-directory',
-        dest='model_dir', default='/model',
+        dest='model_dir', default=os.getcwd(),
         help='Path to the model.'
     )
     parser.add_argument(
