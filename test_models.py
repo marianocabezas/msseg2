@@ -30,12 +30,12 @@ def parse_inputs():
     )
     parser.add_argument(
         '-m', '--model-directory',
-        dest='model_dir', default=os.getcwd(),
+        dest='model_dir', default='/model',
         help='Path to the model.'
     )
     parser.add_argument(
         '-t', '--test-directory',
-        dest='test_dir', default='/workspace',
+        dest='test_dir', default=os.getcwd(),
         help='Option to use leave-one-out. The second parameter is the '
              'folder with all the patients.'
     )
