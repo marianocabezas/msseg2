@@ -97,7 +97,7 @@ def test(n_folds=5, verbose=0):
     t_path = options['test_dir']
     model_path = options['model_dir']
     tmp_path = '/tmp'
-    batch_size = 512
+    batch_size = 256
     patch_size = 32
 
     brain_name = 'brain_mask.nii.gz'
